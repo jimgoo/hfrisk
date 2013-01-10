@@ -1,1 +1,1 @@
-modded on galaxy by JG
+modded on mac by JG
