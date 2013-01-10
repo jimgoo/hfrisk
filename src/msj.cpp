@@ -14,7 +14,7 @@
 #define DIETAG      2
 //-------------------------------------------------------------------------------
 
-string LINE = "========================================================================================\n";
+string LINE = "=================================================================\n";
 
 // current column in marginal estimation
 int currentColumn = -1;
@@ -94,9 +94,9 @@ int doLUT = 1;
 // get memory usage
 
 static void process_mem_usage() {
-  printf(LINE.c_str()); //"========================================================================================\n");
+  printf(LINE.c_str());
   system("free -m");
-  printf(LINE.c_str()); //"========================================================================================\n");
+  printf(LINE.c_str());
 }
 
 
@@ -792,14 +792,8 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
   assert(cols == mnResults.n_cols);
   assert(cols == mnRet.n_cols);
   assert(maxRMPQ > 0);
-  
-  // number of stocks
+ 
   int iS = cols;
-
-  // set equal portfolio weights
-  //vec wts = 1.0/((double) iS) * ones(iS);
-
-  //
   int iCoeffs = (int) mnResults(0,0);
   int iNonCoeffs = mygarch::iNonCoeffs;
   int i0 = iNonCoeffs + iCoeffs + 3*maxRMPQ;

@@ -26,7 +26,7 @@ HDF5_L =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
