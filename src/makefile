@@ -52,7 +52,7 @@ MPI   = -I /usr/local/pkg/openmpi/include
 NLOPT = -I/nfs/user03/copula/20120323/lib/nlopt-2.2.4/build/include -L/nfs/user03/copula/20120323/lib/nlopt-2.2.4/build/lib
 
 # Use OpenBLAS for threading and regular built in LAPACK (/usr/lib/liblapack.so)
-AD_I  = -I/nfs/user03/copula/20120323/lib/armadillo-3.4.1/include -I/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/include
+AD_I  = -I/nfs/user03/copula/20120323/lib/armadillo-3.6.1/include -I/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/include
 AD_L  = -L/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/lib -lopenblas /usr/lib/liblapack.so -lgfortran
 
 FFTW_I = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/include
