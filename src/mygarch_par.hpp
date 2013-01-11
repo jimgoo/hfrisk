@@ -13,7 +13,7 @@ class mygarch_par {
 
 public:
 
-  void fit(int argc, char **argv);
+  //void fit(int argc, char **argv);
   
 
 };

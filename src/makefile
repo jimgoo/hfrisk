@@ -9,33 +9,34 @@
 #OBJS     = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
 #OBJS     = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
 #OBJS     = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
-OBJS     = ShardBinaries
+OBJS     = #ShardBinaries
+OBJS     = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o mystable.o myskewt_lut.o
 EXE      = tester
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
 LFLAGS   = -Wall $(DEBUG)
 OUTPUT   = -o $(EXE)
-LNK      = -lhdf5 -lgsl -lgslcblas -lnlopt -lfftw3 -lm
+LNK      = -lgsl -lgslcblas -lnlopt -lfftw3 -lm
 
 #-------------------------------------------------------------------------------
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
-CC    = mpic++ 
-BOOST = -I/opt/local/include
-GSL   = -I/opt/local/include/gsl
-MPI   = -I/opt/local/include/openmpi
-NLOPT = -I/usr/local/include
-AD_I  = -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.4.2/include
-AD_L  =  -framework Accelerate
+CC     = mpic++ 
+BOOST  = -I/opt/local/include
+GSL    = -I/opt/local/include/gsl
+MPI    = -I/opt/local/include/openmpi
+NLOPT  = -I/usr/local/include
+AD_I   = -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include
+AD_L   = -framework Accelerate
 FFTW_I = -I/Users/jimmiegoode/Documents/Glimm/lib/fftw-3.3.2/installdir/include
 FFTW_L = -L/Users/jimmiegoode/Documents/Glimm/lib/fftw-3.3.2/installdir/lib/
-HDF_I = -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include
-HDF_L = -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib
+HDF_I  = -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include
+HDF_L  = -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5
 endif
 
 # Galaxy speciffic
@@ -54,7 +55,7 @@ FFTW_I = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/include
 FFTW_L = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/lib
 
 HDF_I = -I/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/include
-HDF_L = -L/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/lib
+HDF_L = -L/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/lib -lhdf5
 
 # Elemental
 #include /nfs/user03/jimmie21/libs/conf/elemvariables
@@ -92,7 +93,7 @@ endif
 all: main
 
 main: $(OBJS)
-	$(CC) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(AD_L) $(MPI) $(FFTW_L) $(HDF5_L) $(LNK)
+	$(CC) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(HDF5_L) $(LNK)
 
 Constants.o: Constants.h Constants.cpp
 	$(CC) $(CFLAGS) Constants.cpp
@@ -107,7 +108,7 @@ IO.o: IO.h IO.cpp
 	$(CC) $(CFLAGS) $(GSL) $(BOOST) IO.cpp
 
 Stats.o: Stats.hpp Stats.cpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(AD_I) $(MPI) $(HDF5_I) Stats.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) $(MPI) $(HDF5_I) Stats.cpp
 
 gamma.o: gamma.h gamma.cpp
 	$(CC) $(CFLAGS) $(GSL) $(BOOST) gamma.cpp
@@ -129,6 +130,9 @@ myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
 
 ShardBinaries: ShardBinaries.cpp
 	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
+
+mygarch_par: mygarch_par.cpp mygarch.hpp Stats.hpp IO.h
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(AD_I) $(NLOPT) mygarch.cpp
 
 clean:
 	rm -rf *.o *.out $(EXE)
