@@ -12,7 +12,7 @@ mpirun -np 2 ../lib/tester \
 	-x OMP_NUM_THREADS \
 	-df "${CG_DATA}/csi_20030101_20120801_v3" \
 	-rf "${CG_EXP}/20130105_ST" \
-	-mc 5 \
+	-iS 5 \
 	-nSims 10000 \
 	-v 0 \
 	-margOnly 0 \

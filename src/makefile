@@ -9,7 +9,7 @@
 OBJS     = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
 #OBJS     = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
 #OBJS     = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
-#OBJS     = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o mystable.o myskewt_lut.o
+#OBJS     = mygarch_par.o #MasterSlave.o
 EXE      = ../lib/tester
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
@@ -17,13 +17,14 @@ LFLAGS   = -Wall $(DEBUG)
 OUTPUT   = -o $(EXE)
 LNK      = -lgsl -lgslcblas -lnlopt -lfftw3 -lm
 
+# extra linker flags for MAC mpic++ only.
 MPICCF = 
 
 #-------------------------------------------------------------------------------
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -53,16 +54,15 @@ NLOPT = -I/nfs/user03/copula/20120323/lib/nlopt-2.2.4/build/include -L/nfs/user0
 # Use OpenBLAS for threading and regular built in LAPACK (/usr/lib/liblapack.so)
 AD_I  = -I/nfs/user03/copula/20120323/lib/armadillo-3.6.1/include -I/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/include
 AD_L  = -L/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/lib -lopenblas /usr/lib/liblapack.so -lgfortran
-
 FFTW_I = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/include
 FFTW_L = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/lib
-
 HDF_I = -I/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/include
 HDF_L = -L/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/lib -lhdf5
 
-# Elemental
+# #
+# # Elemental
+# #
 #include /nfs/user03/jimmie21/libs/conf/elemvariables
-
 #SVD: SVD.cpp
 #    ${CXX} ${ELEM_COMPILE_FLAGS} $< -o $@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 # ELEM_I = -I/nfs/user03/jimmie21/libs/include
@@ -134,8 +134,14 @@ myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
 ShardBinaries: ShardBinaries.cpp
 	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
 
-mygarch_par: mygarch_par.cpp mygarch.hpp Stats.hpp IO.h
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
+# mygarch_par: mygarch_par.cpp mygarch.hpp Stats.hpp IO.h
+# 	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
+
+mygarch_par.o: mygarch_par.cpp mygarch.hpp
+	$(CC) $(CFLAGS) $(MPI) mygarch_par.cpp
+
+MasterSlave.o: MasterSlave.hpp MasterSlave.cpp
+	$(CC) $(CFLAGS) $(MPI) MasterSlave.cpp
 
 clean:
 	rm -rf *.o *.out $(EXE)

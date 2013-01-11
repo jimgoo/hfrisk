@@ -4,7 +4,7 @@
 */
 
 
-#include "mygarch_par.hpp"
+#include "MasterSlave.hpp"
 
 // MPI
 #define WORKTAG  1
@@ -14,30 +14,30 @@
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static int get_next_work_item(double* work) {
+static int MasterSlave::get_next_work_item(double* work) {
 
-  
+  // import return data for asset  
   return 0;
 }
 
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static void onWorkComplete(double* result) {
+static void MasterSlave::onWorkComplete(double* result) {
   
 }
 
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static void onAllWorkComplete() {
+static void MasterSlave:: onAllWorkComplete() {
 
 }
 
 //-------------------------------------------------------------------------------
 // <SLAVE>
 
-static void do_work(double *work, double *result, int size_work, int size_res) {
+static void MasterSlave::do_work(double *work, double *result, int size_work, int size_res) {
 
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
@@ -46,6 +46,7 @@ static void do_work(double *work, double *result, int size_work, int size_res) {
 	   << ", size_work = " << size_work << ", size_res = " << size_res << "...\n";
   
 }
+
 
 //-------------------------------------------------------------------------------
 // <MASTER>
@@ -136,7 +137,7 @@ static void slave(int size_work, int size_res) {
       return;
     }
 
-	do_work(work, result, size_work, size_res);
+	MasterSlave::do_work(work, result, size_work, size_res);
 	
     // Send the result back 
     MPI_Send(&result, size_res, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
@@ -146,7 +147,7 @@ static void slave(int size_work, int size_res) {
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static void estimate() {
+static bool distribute(int rank) {
   
   // MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
   // MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -154,7 +155,6 @@ static void estimate() {
   // MPI_Bcast(&size_res , 1, MPI_INT, 0, MPI_COMM_WORLD);  
   // MPI_Bcast(&vnRet, SIZE_RET, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-  // return a DistMatrix of the parameters
 }
 
 
@@ -163,7 +163,7 @@ static void estimate() {
 
 int main(int argc, char **argv) {
 
-  cout << "\n\nMain for mygarch_par.cpp\n\n";
+  cout << "\n\nMain for MasterSlave.cpp\n\n";
 
   int myrank, ntasks;
 

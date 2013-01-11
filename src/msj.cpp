@@ -29,12 +29,15 @@ int P = 1;
 int Q = 1;
 int maxRMPQ;
 
+int iS = 5102;  // number of stocks
 int iL = 1008;  // lookback window size
 int t =  iL-1;  // idx of starting time (iL-1 <=> first possible day)
 int iT;         // total number of periods
+int iBeg, iEnd; // indices of the dates files to backtest over
 
-mat mnRet;     // returns for current period
-mat mnRetAll;  // returns for all periods
+//mat mnRet;     // returns for current period
+//mat mnRetAll;  // returns for all periods
+
 mat mnStart;   // hot-start parameter matrix
 mat mnResults; // matrix of marginal estimation results
 vec vnDates;   // dates corresponding to the rows of mnRetAll
@@ -57,7 +60,7 @@ int innovType = 1; // 1 = skewt, 2 = stdAS, 3 = CTS, 4 = NTS
 
 int marginalCount  = -1; // number of marginals to estimate (-1 for all)
 
-string dataFile  = "";                           // data file of returns
+string dataFile  = "";                          // data file of returns
 string reportFile = "../data/exports/mnResults"; // output file for report
 
 EST_METHOD estMethod = NMSIMPLEX;             // univariate skewed t MLE method
@@ -84,7 +87,6 @@ int isSimple = 1;
 
 myskewt_lut lut;
 string lut_path = "";
-
 
 // file_type lut_type = hdf5_binary;
 // string lut_ext = ".h5";
@@ -192,6 +194,8 @@ int main(int argc, char **argv) {
 		  lut_path = boost::lexical_cast<string>(argv[i+1]);
 		} else if (strncmp(argv[i],"-doLUT",7) == 0) {
 		  doLUT = boost::lexical_cast<int>(argv[i+1]);
+		} else if (strncmp(argv[i],"-iS",4) == 0) {
+		  iS = boost::lexical_cast<int>(argv[i+1]);
 		}
 	  }
 	}
@@ -211,6 +215,7 @@ int main(int argc, char **argv) {
 	   << "\ndoChkEigs = "  << doCheckEigs << "\nbeginDate = "     << (int)beginDate
 	   << "\nendDate = "    << (int)endDate<< "\ngammaScale = "    << gammaScale
 	   << "\nlut_path = "   << lut_path    << "\ndoLUT = "         << doLUT
+	   << "\niS = "         << iS
 	   << endl
 	   << LINE;
 	
@@ -232,8 +237,8 @@ int main(int argc, char **argv) {
 	cout << "Loading return data..." << endl;
 	
 	//mnRetAll.load(dataFile + "_logret.csv", csv_ascii);
-	mnRetAll.load(dataFile + "_logret.abin", arma_binary);
-	vnDates.load(dataFile + "_dates.csv");
+	//mnRetAll.load(dataFile + "_logret.abin", arma_binary);
+	vnDates.load(dataFile + "/dates.csv");
 	vnDates = vnDates(span(1,vnDates.n_rows-1));
 
 	uvec idx0 = find(vnDates >= beginDate, 1, "first");
@@ -242,29 +247,30 @@ int main(int argc, char **argv) {
 	cout << "border dates: " << (int)vnDates(idx0(0)) << ", " << (int)vnDates(idx1(0)) << endl;
 
 	// get column indices
-	int iTkr;
-	if (marginalCount > 0) {
-	  iTkr = marginalCount-1;
-	} else {
-	  iTkr = mnRetAll.n_cols-1;
-	} 
+	// int iTkr;
+	// if (marginalCount > 0) {
+	//   iTkr = marginalCount-1;
+	// } else {
+	//   iTkr = mnRetAll.n_cols-1;
+	// }
 
-	int iBeg = idx0(0) - iL + 1;
-	int iEnd = idx1(0);
+	iBeg = idx0(0) - iL + 1;
+	iEnd = idx1(0);
 
 	vnDates = vnDates(span(iBeg,iEnd));
-	mnRetAll = mnRetAll(span(iBeg,iEnd), span(0,iTkr));
+	//mnRetAll = mnRetAll(span(iBeg,iEnd), span(0,iTkr));
 	
-	assert(vnDates.n_rows == mnRetAll.n_rows);
+	//assert(vnDates.n_rows == mnRetAll.n_rows);
 	
-	cout << "size(mnRetAll) = " << mnRetAll.n_rows << ", " << mnRetAll.n_cols << endl;
+	//cout << "size(mnRetAll) = " << mnRetAll.n_rows << ", " << mnRetAll.n_cols << endl;
 	cout << "iBeg = " << iBeg << endl;
 	cout << "iEnd = " << iEnd << endl;
 
-	iT = mnRetAll.n_rows;
+	//iT = mnRetAll.n_rows;
+	iT = vnDates.n_rows;
 
 	// set equal portfolio weights
-	wts = 1.0/((double) mnRetAll.n_cols) * ones(mnRetAll.n_cols);
+	wts = 1.0/((double) iS) * ones((double) iS);
 
 	cout << LINE;
 
@@ -354,13 +360,13 @@ static bool distribute(int rank) {
 	currentColumn = -1;
 
     // set the lookback returns
-	mnRet = mnRetAll(span(t-iL+1, t), span::all);
+	//mnRet = mnRetAll(span(t-iL+1, t), span::all);
 	t++;
 	
 	// set sizes of mnRet
 	// <TODO><VIP> This will fail when the number of stocks changes from day to day
-	rows = mnRet.n_rows;
-	cols  = mnRet.n_cols;
+	rows = iL;  //mnRet.n_rows;
+	cols = iS; //mnRet.n_cols;
 
 	// set the number of hot start parameters
 	size_pars = 0;
@@ -529,6 +535,18 @@ static int get_next_work_item(double* work) {
   	return -1;
   }
 
+  string h5dir = dataFile + "/hdf5";
+
+  vec ret;
+  ret.load(h5dir + "/EQ_" + boost::lexical_cast<string>(currentColumn) + ".h5", hdf5_binary);
+  ret = ret(span(iBeg,iEnd));
+  
+  cout << "size_pars = " << size_pars << ", size(ret) = " << ret.n_rows << ", " << ret.n_cols << endl;
+  
+  for (int i = 0; i < ret.n_rows; i++)
+	work[i] = ret(i);
+
+  /*
   switch(startType) {
 	
   case COLD:
@@ -546,9 +564,12 @@ static int get_next_work_item(double* work) {
 	break;
   }
 
+  //<HERE>
   // fill the remaing work items with returns (oldest to newest)
-  for (int r = size_pars; r < size_work; r++)
+  for (int r = size_pars; r < size_work; r++) {
 	work[r] = mnRet(r-size_pars, currentColumn);
+  }
+  */
   
   //printf("getting work> currentColumn = %u, rows = %u, cols = %u, r = %u, work.length = %lu\n",
   //		 currentColumn, rows, cols, r, sizeof(work)/sizeof(double));
@@ -795,16 +816,15 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
   // check sizes
   assert(size_res == mnResults.n_rows);
   assert(cols == mnResults.n_cols);
-  assert(cols == mnRet.n_cols);
+  //assert(cols == mnRet.n_cols);
   assert(maxRMPQ > 0);
  
-  int iS = cols;
   int iCoeffs = (int) mnResults(0,0);
   int iNonCoeffs = mygarch::iNonCoeffs;
   int i0 = iNonCoeffs + iCoeffs + 3*maxRMPQ;
   double shrinkage = 0.0;
  
-  mat mnGarchRes = zeros(mnRet.n_rows, cols);
+  mat mnGarchRes = zeros(iL, cols); // mnRet.n_rows
   mat mnGarchPars = zeros(i0, cols);
   
   for (int i = 0; i < cols; i++) {
@@ -988,17 +1008,14 @@ static void riskForecast_copula(double &VaR, double &CVaR) {
   // check sizes
   assert(size_res == mnResults.n_rows);
   assert(cols == mnResults.n_cols);
-  assert(cols == mnRet.n_cols);
+  //assert(cols == mnRet.n_cols);
   assert(maxRMPQ > 0);
 
-  // number of stocks
-  int iS = cols;
-  
   int iCoeffs = (int) mnResults(0,0);
   int iNonCoeffs = mygarch::iNonCoeffs;
   int i0 = iNonCoeffs + iCoeffs + 3*maxRMPQ;
 
-  mat mnGarchRes = zeros(mnRet.n_rows, cols);
+  mat mnGarchRes = zeros(iL, cols);
   mat mnGarchPars = zeros(i0, cols);
   
   for (int i = 0; i < cols; i++) {
@@ -1300,7 +1317,7 @@ void onMarginalsComplete() {
   }
   
   // Note t is the index of the NEXT returns b/c it was already incremented in the distribute() method.
-  double nextRet = sum(mnRetAll(t, span::all).t() % wts); 
+  double nextRet = 0.0; //sum(mnRetAll(t, span::all).t() % wts); 
 
   t_period = MPI::Wtime() - t_period;
   t_forc = MPI::Wtime() - t_forc;
