@@ -438,10 +438,13 @@ class Option:
 #             chain = OptionChain(grp[0].symu, grp)
 #             chains.append(chain)
 #         return chains
-    
+
+"""
+This serves as the general database class.
+"""
 class HDF5:
 
-    DATA_DIR = '../HDF5'
+    DATA_DIR = os.getenv("CG_HDF", "../HDF")
     
     def __init__(self):
         pass
@@ -544,7 +547,6 @@ class HDF5:
 class DeltaLoader:
 
     # directory of extracted data
-    #dn_dir = "../dn"
     dn_dir = os.getenv("CG_DN", "../dn")
 
     # shorthand name of data source
@@ -665,7 +667,3 @@ class DeltaLoader:
 
         return [opts,arr]
 
-
-        
-        
-        
