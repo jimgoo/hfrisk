@@ -17,11 +17,6 @@ LFLAGS   = -Wall $(DEBUG)
 OUTPUT   = -o $(EXE)
 LNK      = -lhdf5 -lgsl -lgslcblas -lnlopt -lfftw3 -lm
 
-# Link Flag: -lhdf5
-# HDF5_I = -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include
-# HDF5_L = -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib
-
-
 #-------------------------------------------------------------------------------
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
@@ -57,6 +52,9 @@ AD_L  = -L/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f0
 
 FFTW_I = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/include
 FFTW_L = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/lib
+
+HDF_I = -I/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/include
+HDF_L = -L/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/lib
 
 # Elemental
 #include /nfs/user03/jimmie21/libs/conf/elemvariables
