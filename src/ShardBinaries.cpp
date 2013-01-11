@@ -51,7 +51,7 @@ int main(int argc, char** argv)
   
   for (int i = 0; i < X.n_cols; i++) {	  
 	vec x = X.col(i);
-	x.save(fout + "EQ_" + boost::lexical_cast<string>(i) + ".h5", hdf5_binary);
+	x.save(fout + "EQ_" + boost::lexical_cast<string>(i) + ".abin", arma_binary); //+ ".h5", hdf5_binary);
   }
   
   return 0;

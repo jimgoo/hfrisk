@@ -26,7 +26,7 @@ LNK      = -lhdf5 -lgsl -lgslcblas -lnlopt -lfftw3 -lm
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = MAC
+TARGET = GALAXY
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -129,7 +129,7 @@ myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
 	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(AD_I) $(NLOPT) myskewt_lut.cpp
 
 ShardBinaries: ShardBinaries.cpp
-	g++ -o ShardBinaries ShardBinaries.cpp $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
+	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
 
 clean:
 	rm -rf *.o *.out $(EXE)
