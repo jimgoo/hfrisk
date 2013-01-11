@@ -29,7 +29,7 @@ int P = 1;
 int Q = 1;
 int maxRMPQ;
 
-int iS = 5102;  // number of stocks
+int iS = 5109;  // number of stocks
 int iL = 1008;  // lookback window size
 int t =  iL-1;  // idx of starting time (iL-1 <=> first possible day)
 int iT;         // total number of periods
@@ -541,7 +541,7 @@ static int get_next_work_item(double* work) {
   ret.load(h5dir + "/EQ_" + boost::lexical_cast<string>(currentColumn) + ".h5", hdf5_binary);
   ret = ret(span(iBeg,iEnd));
   
-  cout << "size_pars = " << size_pars << ", size(ret) = " << ret.n_rows << ", " << ret.n_cols << endl;
+  //cout << "size_pars = " << size_pars << ", size(ret) = " << ret.n_rows << ", " << ret.n_cols << endl;
   
   for (int i = 0; i < ret.n_rows; i++)
 	work[i] = ret(i);
