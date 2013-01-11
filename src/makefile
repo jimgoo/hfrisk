@@ -6,21 +6,21 @@
 # mpirun -np 2 ./tester -df ../data/csi_20030101_20120801_v3 -mc 5 -maxT 1009 -nSims 10000 -v 0 -rf ../data/exports/test -margOnly 0 -innovType 3 -depStruct 1
 #-------------------------------------------------------------------------------
 
-OBJS     = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
+#OBJS     = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
 #OBJS     = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
 #OBJS     = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
+OBJS     = ShardBinaries
 EXE      = tester
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
 LFLAGS   = -Wall $(DEBUG)
 OUTPUT   = -o $(EXE)
-LNK      = -lgsl -lgslcblas -lnlopt -lfftw3 -lm
+LNK      = -lhdf5 -lgsl -lgslcblas -lnlopt -lfftw3 -lm
 
 # Link Flag: -lhdf5
 # HDF5_I = -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include
 # HDF5_L = -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib
-HDF5_I = 
-HDF5_L = 
+
 
 #-------------------------------------------------------------------------------
 # Target Speciffic Parameters
@@ -39,6 +39,8 @@ AD_I  = -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.4.2/include
 AD_L  =  -framework Accelerate
 FFTW_I = -I/Users/jimmiegoode/Documents/Glimm/lib/fftw-3.3.2/installdir/include
 FFTW_L = -L/Users/jimmiegoode/Documents/Glimm/lib/fftw-3.3.2/installdir/lib/
+HDF_I = -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include
+HDF_L = -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib
 endif
 
 # Galaxy speciffic
@@ -56,7 +58,7 @@ FFTW_I = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/include
 FFTW_L = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/lib
 
 # Elemental
-include /nfs/user03/jimmie21/libs/conf/elemvariables
+#include /nfs/user03/jimmie21/libs/conf/elemvariables
 
 #SVD: SVD.cpp
 #    ${CXX} ${ELEM_COMPILE_FLAGS} $< -o $@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
@@ -125,6 +127,9 @@ myassg.o: myassg.cpp Stats.hpp mystable.hpp
 
 myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
 	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(AD_I) $(NLOPT) myskewt_lut.cpp
+
+ShardBinaries: ShardBinaries.cpp
+	g++ -o ShardBinaries ShardBinaries.cpp $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
 
 clean:
 	rm -rf *.o *.out $(EXE)
