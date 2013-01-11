@@ -208,8 +208,8 @@ int main(int argc, char **argv) {
 	   << "\nestMethod = "  << estMethod   << "\niMaxT = "         << iMaxT
 	   << "\nnSim = "       << nSim        << "\ninnovType = "     << innovType
 	   << "\nmargOnly = "   << margOnly    << "\ndepStruct = "     << depStruct
-	   << "\ndoChkEigs = "  << doCheckEigs << "\nbeginDate = "     << beginDate
-	   << "\nendDate = "    << endDate     << "\ngammaScale = "    << gammaScale
+	   << "\ndoChkEigs = "  << doCheckEigs << "\nbeginDate = "     << (int)beginDate
+	   << "\nendDate = "    << (int)endDate<< "\ngammaScale = "    << gammaScale
 	   << "\nlut_path = "   << lut_path    << "\ndoLUT = "         << doLUT
 	   << endl
 	   << LINE;

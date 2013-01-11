@@ -23,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = MAC
+TARGET = GALAXY
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -102,13 +102,13 @@ Constants.o: Constants.h Constants.cpp
 	$(CC) $(CFLAGS) Constants.cpp
 
 myskewt.o: myskewt.hpp myskewt.cpp Constants.h gamma.h IO.h Stats.hpp
-	$(CC) $(CFLAGS) $(BOOST) $(GSL) $(MPI) $(NLOPT) $(AD_I) myskewt.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) myskewt.cpp
 
 msj.o: msj.h msj.cpp IO.h Stats.hpp mygarch.hpp myskewt.hpp mystable.hpp myskewt_lut.hpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(MPI) $(NLOPT) $(AD_I) msj.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) msj.cpp
 
 IO.o: IO.h IO.cpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) IO.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) IO.cpp
 
 Stats.o: Stats.hpp Stats.cpp
 	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) $(MPI) $(HDF5_I) Stats.cpp
@@ -120,22 +120,22 @@ skeweduvstudenttpdf.o: skeweduvstudenttpdf.h skeweduvstudenttpdf.cpp gamma.h
 	$(CC) $(CFLAGS) $(GSL) $(BOOST) skeweduvstudenttpdf.cpp
 
 mygarch.o: mygarch.hpp mygarch.cpp Stats.hpp IO.h 
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
 
 mystable.o: mystable.hpp mystable.cpp Stats.hpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(MPI) $(AD_I) $(NLOPT) $(FFTW_I) mystable.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) $(FFTW_I) mystable.cpp
 
 myassg.o: myassg.cpp Stats.hpp mystable.hpp 
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(MPI) $(AD_I) myassg.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) myassg.cpp
 
 myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(MPI) $(AD_I) $(NLOPT) myskewt_lut.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) myskewt_lut.cpp
 
 ShardBinaries: ShardBinaries.cpp
 	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
 
 mygarch_par: mygarch_par.cpp mygarch.hpp Stats.hpp IO.h
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
+	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
 
 clean:
 	rm -rf *.o *.out $(EXE)

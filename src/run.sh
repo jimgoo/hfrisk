@@ -2,6 +2,8 @@
 
 CG_DATA="/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/csi/patentData"
 CG_LUT="/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/LUTs"
+
+################################
 CG_EXP="${CG_DATA}/exports"
 
 mkdir ${CG_EXP}
