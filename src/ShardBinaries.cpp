@@ -26,8 +26,8 @@ int main(int argc, char** argv)
 
   mat X;
 
-  /*
-  if (0) {
+  
+  if (1) {
 	  cout << "\n\nGenerating\n\n";
 	  X = randu<mat>(1000,3);
 	  X.save(fout, hdf5_binary);
@@ -43,8 +43,9 @@ int main(int argc, char** argv)
   
   sum(X).print("sum(X) = ");
   //std(X).print("std(X) = ");
-  */
+  
 
+  /*
   X.load(fin, arma_binary);
 
   system(("mkdir " + fout).c_str());
@@ -54,6 +55,7 @@ int main(int argc, char** argv)
 	x.save(fout + "/EQ_" + boost::lexical_cast<string>(i) + ".h5", hdf5_binary);
 	//+ ".abin", arma_binary); //+ ".h5", hdf5_binary);
   }
+  */
   
   return 0;
 }

@@ -84,8 +84,13 @@ int isSimple = 1;
 
 myskewt_lut lut;
 string lut_path = ""; //../LUTs/df=5_d=30_nSim=10000";
+
+
 file_type lut_type = hdf5_binary;
 string lut_ext = ".h5";
+
+// file_type lut_type = csv_ascii;
+// string lut_ext = ".csv";
 
 vec wts;
 int doLUT = 1;

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CG_BASE="/Users/jimmiegoode/Documents/Glimm/github/hfrisk"
+#CG_BASE="/Users/jimmiegoode/Documents/Glimm/github/hfrisk"
 
 # trading calendar dir
 CG_CALENDARS="${CG_BASE}/data/calendars"
@@ -22,5 +22,8 @@ export CG_COLMAP=${CG_COLMAP}
 CG_HDF="${CG_BASE}/data/HDF"
 export CG_HDF=${CG_HDF}
 
+# Patent dir
+CG_DATAP="${CG_BASE}/data/patentData"
+export CG_DATAP=${CG_DATAP}
 
 
