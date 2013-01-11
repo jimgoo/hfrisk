@@ -18,6 +18,6 @@ mpirun -np 2 ../lib/tester \
 	-depStruct 1 \
 	-doCheckEigs 0 \
 	-beginDate 20080102 \
-	-endDate 20081231 \
+	-endDate 20080104 \
 	-lut_path "${CG_LUT}/test1" \
 	-doLUT 1

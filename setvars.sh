@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#CG_BASE="/Users/jimmiegoode/Documents/Glimm/github/hfrisk"
+CG_BASE="/Users/jimmiegoode/Documents/Glimm/github/hfrisk"
 
 # trading calendar dir
 CG_CALENDARS="${CG_BASE}/data/calendars"
@@ -26,4 +26,6 @@ export CG_HDF=${CG_HDF}
 CG_DATAP="${CG_BASE}/data/patentData"
 export CG_DATAP=${CG_DATAP}
 
-
+# Make directories if they don't exist already
+mkdir lib
+mkdir data
