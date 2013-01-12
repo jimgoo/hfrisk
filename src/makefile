@@ -156,7 +156,7 @@ pack:
 	zip -rq src.zip *
 
 send:
-	curl -T src.zip ftp://hjkm.net/private/ --user jimmie1921:Geaux235711!
+	curl -T src.zip ftp://hjkm.net/private/ --user jimmie1921
 
 #scp src.zip jgoode@ssh.ams.sunysb.edu:~/dropbox/
 #ssh jgoode@ssh.ams.sunysb.edu "sh pushbox"
