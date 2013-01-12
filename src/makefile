@@ -6,10 +6,12 @@
 # mpirun -np 2 ./tester -df ../data/csi_20030101_20120801_v3 -mc 5 -maxT 1009 -nSims 10000 -v 0 -rf ../data/exports/test -margOnly 0 -innovType 3 -depStruct 1
 #-------------------------------------------------------------------------------
 
-OBJS     = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
-#OBJS     = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
-#OBJS     = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
+#OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
+#OBJS = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
+#OBJS = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
 #OBJS     = mygarch_par.o #MasterSlave.o
+
+OBJS = MasterSlave.o mygarch_par.o
 EXE      = ../lib/tester
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
@@ -24,12 +26,12 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
-#CC     = mpic++
-CC     = g++
+#CCMPI     = mpic++
+CCMPI     = g++
 MPICCF = -L/opt/local/lib -lmpi_cxx -lmpi -lm
 BOOST  = -I/opt/local/include
 GSL    = -I/opt/local/include/gsl
@@ -41,11 +43,17 @@ FFTW_I = -I/Users/jimmiegoode/Documents/Glimm/lib/fftw-3.3.2/installdir/include
 FFTW_L = -L/Users/jimmiegoode/Documents/Glimm/lib/fftw-3.3.2/installdir/lib/
 HDF_I  = -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include
 HDF_L  = -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5
+
+include /Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/conf/elemvariables
+
+# ELEM_I = -I/Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/include
+# ELEM_L = -L/Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/lib
+
 endif
 
 # Galaxy speciffic
 ifeq ($(TARGET), GALAXY)
-CC    = mpic++  -fopenmp
+CCMPI    = mpic++  -fopenmp
 BOOST = -I /nfs/user03/copula/20120323/lib/boost_1_49_0
 GSL   = -I /nfs/user03/copula/20120323/lib/gsl-1.15/INSTALL_DIR/gsl/include/gsl
 MPI   = -I /usr/local/pkg/openmpi/include
@@ -59,20 +67,14 @@ FFTW_L = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/lib
 HDF_I = -I/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/include
 HDF_L = -L/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/lib -lhdf5
 
-# #
-# # Elemental
-# #
-#include /nfs/user03/jimmie21/libs/conf/elemvariables
-#SVD: SVD.cpp
-#    ${CXX} ${ELEM_COMPILE_FLAGS} $< -o $@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
-# ELEM_I = -I/nfs/user03/jimmie21/libs/include
-# ELEM_L = -L/nfs/user03/jimmie21/libs/lib
+include /nfs/user03/copula/20120323/lib/elemental-0.77/build/conf/elemvariables
+
 
 endif
 
 
 ifeq ($(TARGET), BLUEGENE)
-CC    = mpicxx  -fopenmp
+CCMPI    = mpicxx  -fopenmp
 BOOST = -I/gpfs/home3/j/jgoode/lib/boost_1_51_0
 GSL   = -I/gpfs/home3/j/jgoode/lib/gsl-1.15/install/gsl/include -L/gpfs/home3/j/jgoode/lib/gsl-1.15/install/gsl/lib
 MPI   = -I/bgsys/drivers/ppcfloor/comm/include
@@ -96,52 +98,52 @@ endif
 all: main
 
 main: $(OBJS)
-	$(CC) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(HDF5_L) $(LNK) $(MPICCF)
+	$(CCMPI) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(HDF5_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
 Constants.o: Constants.h Constants.cpp
-	$(CC) $(CFLAGS) Constants.cpp
+	$(CCMPI) $(CFLAGS) Constants.cpp
 
 myskewt.o: myskewt.hpp myskewt.cpp Constants.h gamma.h IO.h Stats.hpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) myskewt.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) myskewt.cpp
 
 msj.o: msj.h msj.cpp IO.h Stats.hpp mygarch.hpp myskewt.hpp mystable.hpp myskewt_lut.hpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) msj.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) ${ELEM_COMPILE_FLAGS} msj.cpp
 
 IO.o: IO.h IO.cpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) IO.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) IO.cpp
 
 Stats.o: Stats.hpp Stats.cpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) $(MPI) $(HDF5_I) Stats.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) $(MPI) $(HDF5_I) Stats.cpp
 
 gamma.o: gamma.h gamma.cpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) gamma.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) gamma.cpp
 
 skeweduvstudenttpdf.o: skeweduvstudenttpdf.h skeweduvstudenttpdf.cpp gamma.h
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) skeweduvstudenttpdf.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) skeweduvstudenttpdf.cpp
 
 mygarch.o: mygarch.hpp mygarch.cpp Stats.hpp IO.h 
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
 
 mystable.o: mystable.hpp mystable.cpp Stats.hpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) $(FFTW_I) mystable.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) $(FFTW_I) mystable.cpp
 
 myassg.o: myassg.cpp Stats.hpp mystable.hpp 
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) myassg.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) myassg.cpp
 
 myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
-	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) myskewt_lut.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) myskewt_lut.cpp
 
 ShardBinaries: ShardBinaries.cpp
 	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
 
-# mygarch_par: mygarch_par.cpp mygarch.hpp Stats.hpp IO.h
-# 	$(CC) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
-
-mygarch_par.o: mygarch_par.cpp mygarch.hpp
-	$(CC) $(CFLAGS) $(MPI) mygarch_par.cpp
+mygarch_par.o: mygarch_par.cpp mygarch.hpp MasterSlave.hpp
+	$(CCMPI) $(CFLAGS) ${ELEM_COMPILE_FLAGS} $(MPI) mygarch_par.cpp
 
 MasterSlave.o: MasterSlave.hpp MasterSlave.cpp
-	$(CC) $(CFLAGS) $(MPI) MasterSlave.cpp
+	$(CCMPI) $(CFLAGS) $(MPI) MasterSlave.cpp
+
+SymmetricEig: SymmetricEig.cpp
+	${CXX} ${ELEM_COMPILE_FLAGS} $< -o $@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
 clean:
 	rm -rf *.o *.out $(EXE)
@@ -161,7 +163,7 @@ send:
 #scp -i /home/fermat/grads/jgoode/.ssh/galaxy2 -r dropbox/* jimmie21@galaxy.ams.sunysb.edu:~/dropbox/
 
 sltest:
-	$(CC) -O2 $(LFLAGS) $(BLAS) $(LAPACK) $(SCALAPACK) $(MPI) sltest.cpp -o sltest 
+	$(CCMPI) -O2 $(LFLAGS) $(BLAS) $(LAPACK) $(SCALAPACK) $(MPI) sltest.cpp -o sltest 
 
 
 # g++ -o ShardBinaries ShardBinaries.cpp -I/opt/local/include -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5 -lhdf5 -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include -framework Accelerate

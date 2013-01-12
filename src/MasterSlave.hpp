@@ -10,15 +10,18 @@ using namespace std;
 
 class MasterSlave {
 
-  int a;
-
 public:
 
-  // static virtual void do_work(double *work, double *result, int size_work, int size_res);
-  // virtual void onWorkComplete(double* result);
-  // virtual void onAllWorkComplete();
-  // virtual int get_next_work_item(double* work);
+  int iters;
   
+  virtual bool get_next_work_item(double *work);
+  virtual void do_work(double *work, double *result, int size_work, int size_res);
+  virtual void onWorkComplete(double *result);
+  virtual void onAllWorkComplete();
+  
+  void slave(int size_work, int size_res);
+  void master(int size_work, int size_res);
+  void distribute(int rank);
 
 };
 

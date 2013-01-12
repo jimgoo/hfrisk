@@ -14,45 +14,37 @@
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static int MasterSlave::get_next_work_item(double* work) {
-
-  // import return data for asset  
-  return 0;
-}
-
-//-------------------------------------------------------------------------------
-// <MASTER>
-
-static void MasterSlave::onWorkComplete(double* result) {
-  
-}
-
-//-------------------------------------------------------------------------------
-// <MASTER>
-
-static void MasterSlave:: onAllWorkComplete() {
-
+bool MasterSlave::get_next_work_item(double* work) {
+  return false;
 }
 
 //-------------------------------------------------------------------------------
 // <SLAVE>
 
-static void MasterSlave::do_work(double *work, double *result, int size_work, int size_res) {
-
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  
-  cout << "Doing work, rank = " << myrank
-	   << ", size_work = " << size_work << ", size_res = " << size_res << "...\n";
+void MasterSlave::do_work(double *work, double *result, int size_work, int size_res) {
   
 }
-
 
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static void master(int size_work, int size_res) {
+void MasterSlave::onWorkComplete(double *result) {
+  
+}
 
+//-------------------------------------------------------------------------------
+// <MASTER>
+
+void MasterSlave:: onAllWorkComplete() {
+
+}
+
+//-------------------------------------------------------------------------------
+// <MASTER>
+
+void MasterSlave::master(int size_work, int size_res) {
+
+  iters = 0;
   
   double work[size_work];  
   double result[size_res];
@@ -85,29 +77,32 @@ static void master(int size_work, int size_res) {
   }
 
   // Loop over getting new work requests until there is no more work to be done
-  int ret = get_next_work_item(work);
+  bool hasData = get_next_work_item(work);
 	
-  while (ret == 0) {
+  while (hasData) {
 
     // Receive results from a slave
     MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+	
 	onWorkComplete(result);
 	
     MPI_Send(&work, size_work, MPI_DOUBLE, status.MPI_SOURCE, WORKTAG, MPI_COMM_WORLD);
 
     // Get the next unit of work to be done
-    ret = get_next_work_item(work);	
+    hasData = get_next_work_item(work);	
   }
 
   // There's no more work to be done, so receive all the outstanding results from the slaves. 
   for (rank = 1; rank < ntasks; ++rank) {
 	
     MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
 	onWorkComplete(result);
   }
   
   // Tell all the slaves to exit by sending an empty message with the DIETAG.
   for (rank = 1; rank < ntasks; ++rank) {
+	
     MPI_Send(0, 0, MPI_DOUBLE, rank, DIETAG, MPI_COMM_WORLD);
   }
 
@@ -120,8 +115,10 @@ static void master(int size_work, int size_res) {
 //-------------------------------------------------------------------------------
 // <SLAVE>
 
-static void slave(int size_work, int size_res) {
+void MasterSlave::slave(int size_work, int size_res) {
 
+  iters++;
+  
   double work[size_work];
   double result[size_res];
   
@@ -137,17 +134,18 @@ static void slave(int size_work, int size_res) {
       return;
     }
 
-	MasterSlave::do_work(work, result, size_work, size_res);
+	do_work(work, result, size_work, size_res);
 	
     // Send the result back 
     MPI_Send(&result, size_res, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
   }
+  
 }
 
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static bool distribute(int rank) {
+void MasterSlave::distribute(int rank) {
   
   // MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
   // MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -157,6 +155,11 @@ static bool distribute(int rank) {
 
 }
 
+
+//-------------------------------------------------------------------------------
+//
+
+/*
 
 //-------------------------------------------------------------------------------
 // <MAIN>
@@ -170,18 +173,24 @@ int main(int argc, char **argv) {
   int size_work = 5;
   int size_res  = 3;
 
+  MasterSlave ms;
+
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
 
-  int hasData = distribute(myrank);
+  ms.distribute(myrank);
   
   if (myrank == 0) {
-	master(size_work, size_res);
+  	ms.master(size_work, size_res);
   } else {	  
-  	slave(size_work, size_res);
+  	ms.slave(size_work, size_res);
   }
 
+  MPI_Finalize();
+  
   return 0;
 
 }
+
+*/

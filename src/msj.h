@@ -13,6 +13,7 @@
 #include <mpi.h>
 #include <armadillo>
 //#include <boost/filesystem.hpp>
+#include "elemental.hpp"
 
 #include "IO.h"
 #include "Stats.hpp"
@@ -23,6 +24,7 @@
 #include "myskewt_lut.hpp"
 
 using namespace arma;
+using namespace elem;
 
 static void master(void);
 static void slave(void);

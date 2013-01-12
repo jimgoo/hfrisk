@@ -12,6 +12,16 @@
 
 #define WORKTAG     1
 #define DIETAG      2
+
+//-------------------------------------------------------------------------------
+// Elemental types
+
+// Typedef our real and complex types to 'R' and 'C' for convenience
+// typedef double ELEM_R;
+// typedef Complex<R> ELEM_C;
+
+//DistMatrix<double> mnResultsE;
+
 //-------------------------------------------------------------------------------
 
 string LINE = "=================================================================\n";
@@ -71,7 +81,7 @@ int iMaxT = -1;                               // maximum period index to run to
 
 // Monte-Carlo parameters
 int nSim = 10000;           // number of copula samples for MC VaR
-double VaR_epsilon = 0.01; // 100*(1-d)% confidence level for VaR and CVaR1
+double VaR_epsilon = 0.01;  // 100*(1-d)% confidence level for VaR and CVaR1
 
 unsigned long int seed = 1; // RNG seed
 std::ostringstream ss;
@@ -90,7 +100,6 @@ string lut_path = "";
 
 // file_type lut_type = hdf5_binary;
 // string lut_ext = ".h5";
-
 file_type lut_type = csv_ascii;
 string lut_ext = ".csv";
 
@@ -106,6 +115,13 @@ static void process_mem_usage() {
   printf(LINE.c_str());
 }
 
+//-------------------------------------------------------------------------------
+// <main>
+
+static void finalize() {
+  Finalize();
+  //MPI_Finalize();
+}
 
 //-------------------------------------------------------------------------------
 // <main>
@@ -114,21 +130,35 @@ int main(int argc, char **argv) {
   
   int myrank, ntasks;
   double t_all;
+
+  //==========================================
+  // initialize MPI (old way)
   
-  // initialize MPI
-  MPI_Init(&argc, &argv);
+  // MPI_Init(&argc, &argv);
+  // MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  // MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+
+  //==========================================
+ 
+  Initialize( argc, argv );
+  mpi::Comm comm = mpi::COMM_WORLD;
+  myrank = mpi::CommRank(comm);
+  ntasks = mpi::CommSize(comm);
+
+  // cout << "ntasks = " << ntasks << endl;
+  // Grid g( comm );
   
-  // find out my identity in the default communicator 
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  
+  //==========================================
+
   // parse command line args
   if (myrank == 0) {
 	
 	// print help and exit for "-h" or "-help"
 	if (argc == 2 && strncmp(argv[1], "-h", 2) == 0)  {
 	  cout << "See msj.cpp for arguments." << endl;
-	  MPI_Finalize();
+
+	  finalize();
+	  
 	  return 0;
 	}
 
@@ -152,7 +182,7 @@ int main(int argc, char **argv) {
 
 	  lut.save("../LUTs/test2", lut_type, lut_ext);
 	  
-	  MPI_Finalize();
+	  finalize();
 	  return 0;
 	}
 	
@@ -278,14 +308,14 @@ int main(int argc, char **argv) {
 	system(("mkdir " + reportFile).c_str());
 	system(("mkdir " + reportFile + "/mnResults").c_str());
 	fReport = fopen((reportFile + "/forc.csv").c_str(), "w+");
-	/*
-	fprintf(fReport, "%s\n",
-			"t, date, VaR_mc, VaR_lut, nextRet, t_garch, " +
-			"t_dep_est_mc, t_dep_est_lut, " +
-			"t_chol_mc, t_chol_lut, " +
-			"t_VaR_mc, t_VaR_lut, " +
-			"t_total_mc, t_total_lut");
-	*/
+
+	// fprintf(fReport, "%s\n",
+	// 		"t, date, VaR_mc, VaR_lut, nextRet, t_garch, " +
+	// 		"t_dep_est_mc, t_dep_est_lut, " +
+	// 		"t_chol_mc, t_chol_lut, " +
+	// 		"t_VaR_mc, t_VaR_lut, " +
+	// 		"t_total_mc, t_total_lut");
+
 	fclose(fReport);
 
 	// write the configuration to file
@@ -310,8 +340,6 @@ int main(int argc, char **argv) {
   MPI_Bcast(&iT, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&t, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-  //cout << "---> mem0 for rank " << myrank << endl;
-  //process_mem_usage();
 
   while (1) {
 
@@ -325,10 +353,10 @@ int main(int argc, char **argv) {
 		
   		// export total runtime
   		t_all = MPI::Wtime() - t_all;
-		//ss << "Runtime for everything = " << t_all << endl;
   	  }
+
+	  finalize();
 	  
-  	  MPI_Finalize();
   	  return 0;
   	}
 	
@@ -809,6 +837,24 @@ struct RunTimes
 // skewed t GARCH innovations.
 
 static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
+  
+
+  cout << "----> Making grid...\n";
+
+  mpi::Comm comm = mpi::COMM_WORLD;
+  const int commRank = mpi::CommRank( comm );
+
+  // try {
+  // 	Grid g( comm );
+  // } catch (exception& e) {
+  // 	ostringstream os;
+  // 	os << "Process " << commRank << " caught exception with message: "
+  // 	   << e.what() << endl;
+  // 	cerr << os.str();
+  // }
+  
+  cout << "----> Done." << endl;
+  
 
   // RunTime structure
   RunTimes rt;

@@ -6,43 +6,31 @@
 
 #include "mygarch_par.hpp"
 
-// MPI
-#define WORKTAG  1
-#define DIETAG   2
-
 
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static int get_next_work_item(double* work) {
+bool mygarch_par::get_next_work_item(double *work) {
 
+  cout << "GARCH: get_next_work\n";
+
+  if (iters > 5) {
+	cout << "GARCH: max iters, breaking\n";
+	return true;
+  }
   
-  return 0;
-}
-
-//-------------------------------------------------------------------------------
-// <MASTER>
-
-static void onWorkComplete(double* result) {
-  
-}
-
-//-------------------------------------------------------------------------------
-// <MASTER>
-
-static void onAllWorkComplete() {
-
+  return true;
 }
 
 //-------------------------------------------------------------------------------
 // <SLAVE>
 
-static void do_work(double *work, double *result, int size_work, int size_res) {
+void mygarch_par::do_work(double *work, double *result, int size_work, int size_res) {
 
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   
-  cout << "Doing work, rank = " << myrank
+  cout << "GARCH: doing work, rank = " << myrank
 	   << ", size_work = " << size_work << ", size_res = " << size_res << "...\n";
   
 }
@@ -50,113 +38,26 @@ static void do_work(double *work, double *result, int size_work, int size_res) {
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static void master(int size_work, int size_res) {
-
-  
-  double work[size_work];  
-  double result[size_res];
-  
-  int myrank, ntasks, rank;
-  MPI_Status status;
-
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-
-  // Initialize the processor map
-  int procMap[ntasks];
-
-  for (int i = 0; i < ntasks; i++) {
-	procMap[i] = -1;
-  }
-  
-  // Seed the slaves; send one unit of work to each slave. 
-  for (rank = 1; rank < ntasks; ++rank) {
-	
-    // Find the next item of work to do
-	get_next_work_item(work);
-
-    MPI_Send(&work,                 // message buffer 
-             size_work,             // size of data item 
-             MPI_DOUBLE,            // data item type is double 
-             rank,                  // destination process rank 
-             WORKTAG,               // user chosen message tag 
-             MPI_COMM_WORLD);       // default communicator 	
-  }
-
-  // Loop over getting new work requests until there is no more work to be done
-  int ret = get_next_work_item(work);
-	
-  while (ret == 0) {
-
-    // Receive results from a slave
-    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-	onWorkComplete(result);
-	
-    MPI_Send(&work, size_work, MPI_DOUBLE, status.MPI_SOURCE, WORKTAG, MPI_COMM_WORLD);
-
-    // Get the next unit of work to be done
-    ret = get_next_work_item(work);	
-  }
-
-  // There's no more work to be done, so receive all the outstanding results from the slaves. 
-  for (rank = 1; rank < ntasks; ++rank) {
-	
-    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-	onWorkComplete(result);
-  }
-  
-  // Tell all the slaves to exit by sending an empty message with the DIETAG.
-  for (rank = 1; rank < ntasks; ++rank) {
-    MPI_Send(0, 0, MPI_DOUBLE, rank, DIETAG, MPI_COMM_WORLD);
-  }
-
-  // Do the copula estimation now that we've got the marginals
-  onAllWorkComplete();
-  
-}
-
-
-//-------------------------------------------------------------------------------
-// <SLAVE>
-
-static void slave(int size_work, int size_res) {
-
-  double work[size_work];
-  double result[size_res];
-  
-  MPI_Status status;
-
-  while (1) {
-
-    // Receive a message from the master 
-    MPI_Recv(&work, size_work, MPI_DOUBLE, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-    // Check the tag of the received message.
-    if (status.MPI_TAG == DIETAG) {  
-      return;
-    }
-
-	do_work(work, result, size_work, size_res);
-	
-    // Send the result back 
-    MPI_Send(&result, size_res, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-  }
+void mygarch_par::onWorkComplete(double *result) {
+  cout << "GARCH: work_done\n";
 }
 
 //-------------------------------------------------------------------------------
 // <MASTER>
 
-static void estimate() {
-  
-  // MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  // MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  // MPI_Bcast(&size_work, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  // MPI_Bcast(&size_res , 1, MPI_INT, 0, MPI_COMM_WORLD);  
-  // MPI_Bcast(&vnRet, SIZE_RET, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-  // return a DistMatrix of the parameters
+void mygarch_par::onAllWorkComplete() {
+  cout << "GARCH: all work done\n";
 }
 
+//-------------------------------------------------------------------------------
+// <MASTER>
+
+// INPUT:
+// 	vector<string> files: list of HDF5 paths
+//	int iBeg, iEnd: indices to start and end with
+
+// OUTPUT:
+//  DistMat mnResults: matrix of parameters and residuals
 
 //-------------------------------------------------------------------------------
 // <MAIN>
@@ -170,17 +71,20 @@ int main(int argc, char **argv) {
   int size_work = 5;
   int size_res  = 3;
 
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  mygarch_par p;
 
-  int hasData = distribute(myrank);
+  Initialize( argc, argv );
+  mpi::Comm comm = mpi::COMM_WORLD;
+  myrank = mpi::CommRank(comm);
+  ntasks = mpi::CommSize(comm);
   
   if (myrank == 0) {
-	master(size_work, size_res);
+	p.master(size_work, size_res);
   } else {	  
-  	slave(size_work, size_res);
+  	p.slave(size_work, size_res);
   }
+
+  Finalize();
 
   return 0;
 
