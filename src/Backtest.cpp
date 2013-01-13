@@ -17,7 +17,7 @@ void checkErr(int i) {
 
 //-------------------------------------------------------------------------------
 
-int main2(int argc, char **argv) {
+int main(int argc, char **argv) {
 
   cout << "\n\nMain for mygarch_par.cpp\n\n";
 
@@ -28,8 +28,8 @@ int main2(int argc, char **argv) {
   int size_world, size_garch, size_mat;
 
   // set group sizes <TODO>
-  size_garch = 1;
-  size_mat = 1;
+  size_garch = 5;
+  size_mat = 2;
   
   MPI_Group group_world, group_garch, group_mat;
   MPI_Comm comm_garch, comm_mat;
@@ -59,11 +59,10 @@ int main2(int argc, char **argv) {
   // - Load HDF files into DistMat
   // - Start backtest
 
-  int rank1, rank2;
-  // ie = MPI_Comm_size(comm_garch, &rank1);
-  // MPI_Comm_size(comm_mat, &rank2);
-  // cout << "rank1 = " << rank1 << ", rank2 = " << rank2 << endl;
-
+  if (rank) {
+	int rank1;
+	ie = MPI_Comm_size(comm_garch, &rank1);
+  }
   
   // free all communicators
   if (comm_garch != MPI_COMM_NULL) MPI_Comm_free(&comm_garch);
@@ -102,7 +101,7 @@ int main2(int argc, char **argv) {
 
 
 
-int main(int argc, char **argv)
+int main2(int argc, char **argv)
 {
 
   int rank[2], size[2], namelen, xranks[] = { 0 };

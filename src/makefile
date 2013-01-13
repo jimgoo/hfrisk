@@ -27,7 +27,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = MAC
+TARGET = GALAXY
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
