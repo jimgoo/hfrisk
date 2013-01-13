@@ -1,6 +1,9 @@
 /*
   Author: Jimmie Goode
   Created: 2013-01-10
+  
+  A dynamically load balanced master/slave application based on:
+  http://www.lam-mpi.org/tutorials/one-step/ezstart.php
 */
 
 

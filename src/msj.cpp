@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
   // parse command line args
   if (myrank == 0) {
 	
-	// print help and exit for "-h" or "-help"
+	// print help and exit for "-h"
 	if (argc == 2 && strncmp(argv[1], "-h", 2) == 0)  {
 	  cout << "See msj.cpp for arguments." << endl;
 
@@ -991,7 +991,6 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
 	gsl_vector_set(pr, i, portRets(i));
 
   gsl_sort(pr->data, pr->stride, pr->size);
-
   VaR_mc = gsl_stats_quantile_from_sorted_data(pr->data, pr->stride, pr->size, VaR_epsilon);
   
   gsl_vector_free(pr);
@@ -1298,9 +1297,6 @@ static void riskForecast_copula(double &VaR, double &CVaR) {
 	
   }
 
-  // set equal portfolio weights
-  //vec wts = 1.0/((double) iS) * ones(iS);
-
   // portfolio returns for each path
   vec portRets = stockRets*wts;
 
@@ -1312,7 +1308,6 @@ static void riskForecast_copula(double &VaR, double &CVaR) {
 	gsl_vector_set(pr, i, portRets(i));
 
   gsl_sort(pr->data, pr->stride, pr->size);
-
   VaR = gsl_stats_quantile_from_sorted_data(pr->data, pr->stride, pr->size, VaR_epsilon);
 
   gsl_vector_free(pr);

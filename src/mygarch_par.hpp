@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 #include <mpi.h>
 #include "elemental.hpp"

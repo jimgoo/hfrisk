@@ -1,3 +1,29 @@
+  /*
+  int rank, size, namelen, xranks[] = { 0 };
+  int send_val, recv_val, send_val2, recv_val2;
+  
+  char processor_name[MPI_MAX_PROCESSOR_NAME];
+
+  MPI_Group mpi_group_world, group_slaves;
+  MPI_Comm comm_slaves;
+
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Get_processor_name(processor_name, &namelen);
+
+  MPI_Comm_group(MPI_COMM_WORLD, &mpi_group_world);
+  MPI_Group_excl(mpi_group_world, 1, xranks, &group_slaves);
+  MPI_Comm_create(MPI_COMM_WORLD, group_slaves, &comm_slaves);
+
+  if (comm_slaves != MPI_COMM_NULL)
+	MPI_Comm_free(&comm_slaves);
+
+  MPI_Group_free(&group_slaves);
+  MPI_Group_free(&mpi_group_world);
+  MPI_Finalize();
+  */
+
 //-------------------------------------------------------------------------------
 // Test on a small universe
 

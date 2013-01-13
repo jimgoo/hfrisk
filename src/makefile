@@ -11,7 +11,8 @@
 #OBJS = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
 #OBJS     = mygarch_par.o #MasterSlave.o
 
-OBJS = MasterSlave.o mygarch_par.o
+#OBJS = MasterSlave.o mygarch_par.o
+OBJS = Backtest.o
 EXE      = ../lib/tester
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
@@ -134,7 +135,7 @@ myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) myskewt_lut.cpp
 
 ShardBinaries: ShardBinaries.cpp
-	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) -lhdf5 $(AD_I) $(AD_L)
+	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
 
 mygarch_par.o: mygarch_par.cpp mygarch.hpp MasterSlave.hpp
 	$(CCMPI) $(CFLAGS) ${ELEM_COMPILE_FLAGS} $(MPI) mygarch_par.cpp
@@ -144,6 +145,9 @@ MasterSlave.o: MasterSlave.hpp MasterSlave.cpp
 
 SymmetricEig: SymmetricEig.cpp
 	${CXX} ${ELEM_COMPILE_FLAGS} $< -o $@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+
+Backtest.o: Backtest.hpp Backtest.cpp
+	$(CCMPI) $(CFLAGS) $(MPI) Backtest.cpp
 
 clean:
 	rm -rf *.o *.out $(EXE)
