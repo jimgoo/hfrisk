@@ -39,7 +39,7 @@ int P = 1;
 int Q = 1;
 int maxRMPQ;
 
-int iS = 5109;  // number of stocks
+int iS;// = 5109;  // number of stocks
 int iL = 1008;  // lookback window size
 int t =  iL-1;  // idx of starting time (iL-1 <=> first possible day)
 int iT;         // total number of periods
@@ -105,6 +105,7 @@ string lut_ext = ".csv";
 
 vec wts;
 int doLUT = 1;
+int numCores;
 
 //-------------------------------------------------------------------------------
 
@@ -127,37 +128,9 @@ static void process_mem_usage() {
 //-------------------------------------------------------------------------------
 // <main>
 
-static void finalize() {
-  
-  // // free all communicators
-  // if (comm_garch != MPI_COMM_NULL) MPI_Comm_free(&comm_garch);
-  // if (comm_mat != MPI_COMM_NULL) MPI_Comm_free(&comm_mat);
-
-  // // free all groups
-  // MPI_Group_free(&group_mat);
-  // MPI_Group_free(&group_garch);
-  // MPI_Group_free(&group_world);
-
-  // finalize
-  MPI_Finalize();
-}
-
-//-------------------------------------------------------------------------------
-
-static void printRange(int r[][3], string name) {
-  int i = 0;
-  cout << name << " = [" << r[i][0] << ", " << r[i][1] << ", " << r[i][2] << "]" << endl;
-}
-
-//-------------------------------------------------------------------------------
-
-
-//-------------------------------------------------------------------------------
-// <main>
-
 int main(int argc, char **argv) {
   
-  int rank, ntasks;
+  int rank;
   double t_all;
 
   //==========================================
@@ -165,7 +138,7 @@ int main(int argc, char **argv) {
   
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  MPI_Comm_size(MPI_COMM_WORLD, &numCores);
 
   //==========================================
  
@@ -220,7 +193,7 @@ int main(int argc, char **argv) {
 	if (argc == 2 && strncmp(argv[1], "-h", 2) == 0)  {
 	  cout << "See msj.cpp for arguments." << endl;
 
-	  finalize();
+	  MPI_Finalize();
 	  
 	  return 0;
 	}
@@ -245,7 +218,7 @@ int main(int argc, char **argv) {
 
 	  lut.save("../LUTs/test2", lut_type, lut_ext);
 	  
-	  finalize();
+	  MPI_Finalize();
 	  return 0;
 	}
 	
@@ -288,7 +261,7 @@ int main(int argc, char **argv) {
 		} else if (strncmp(argv[i],"-doLUT",7) == 0) {
 		  doLUT = boost::lexical_cast<int>(argv[i+1]);
 		} else if (strncmp(argv[i],"-iS",4) == 0) {
-		  iS = boost::lexical_cast<int>(argv[i+1]);
+		  //iS = boost::lexical_cast<int>(argv[i+1]);
 		}
 	  }
 	}
@@ -308,7 +281,7 @@ int main(int argc, char **argv) {
 	   << "\ndoChkEigs = "  << doCheckEigs << "\nbeginDate = "     << (int)beginDate
 	   << "\nendDate = "    << (int)endDate<< "\ngammaScale = "    << gammaScale
 	   << "\nlut_path = "   << lut_path    << "\ndoLUT = "         << doLUT
-	   << "\niS = "         << iS
+	   << "\nnumCores = "   << numCores
 	   << endl
 	   << LINE;
 	
@@ -361,6 +334,7 @@ int main(int argc, char **argv) {
 
 	//iT = mnRetAll.n_rows;
 	iT = vnDates.n_rows;
+	iS = mnRetAll.n_cols;
 
 	// set equal portfolio weights
 	wts = 1.0/((double) iS) * ones((double) iS);
@@ -401,17 +375,21 @@ int main(int argc, char **argv) {
   	int hasData = distribute(rank);
 
   	if (hasData == false) {
+
+	  if (verbose) cout << "----> hasData = false\n";
 	  
   	  if (rank == 0) {
 
+		//if (verbose) cout << "----> closing report file\n";
 		// close report file
-		fclose(fReport);
+		//fclose(fReport);
 		
   		// export total runtime
   		t_all = MPI::Wtime() - t_all;
   	  }
 
-	  finalize();
+	  if (verbose) cout << "----> finalizing MPI\n";
+	  MPI_Finalize();
 	  
   	  return 0;
   	}
@@ -712,10 +690,18 @@ static void do_work_simple(double* work, double* result) {
 	  result[i0+1] = d.mu;
 	  result[i0+2] = d.df;
 	  result[i0+3] = d.sigma;
-
-	  // transform standardized residuals to copula space
-	  //cdf = myskewt::cdf(gvec, d.gamma, d.mu, d.df, d.sigma);
-	  //assert(0 && "not implemented");
+	}
+	break;
+  case 2:
+	{
+	  // convert GSL vector to ARMA vector
+	  vec gvec(g.u->size);
+	  for (int i = 0; i < g.u->size; i++)
+		gvec(i) = gsl_vector_get(g.u, i);
+	  
+	  mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::stdAS);
+	  result[i0]   = s.pars[0];
+	  result[i0+1] = s.pars[1];
 	}
 	break;
   default:
