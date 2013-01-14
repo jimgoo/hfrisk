@@ -6,6 +6,11 @@
 
 #include "Backtest.hpp"
 
+
+Grid *grid;
+DistMatrix<double,STAR,VC> *dmRet;
+
+
 //-------------------------------------------------------------------------------
 
 void checkErr(int i) {
@@ -26,14 +31,10 @@ void printRange(int r[][3], string name) {
 int main(int argc, char **argv) {
 
   // rank of this process
-  int rank, ie;
+  int rank;
 
   // sizes of each group
   int size_world, size_garch, size_mat;
-
-  // set group sizes <TODO>
-  //size_garch = 6;
-  //size_mat = 1;
   
   MPI_Group group_world, group_garch, group_mat;
   MPI_Comm comm_garch, comm_mat;
@@ -83,51 +84,76 @@ int main(int argc, char **argv) {
 	MPI_Comm_size(comm_mat, &gsize);
 	cout << "MAT Member: ranks = [" << rank << ", " << grank << "], groupSize = " << gsize << endl;
 
-	string fname = "/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/csi/patentData/csi_20030101_20120801_v3/logret.abin";
-
-	file_type type = arma_binary;
-	  
-	Grid grid( comm_mat );
-
+ 
 	//DistMatrix<double,STAR,VC> returns = IO::arma2distMat(fname, arma::arma_binary, grid);
+
+	/*
+	string fname = "/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/csi/patentData/csi_20030101_20120801_v3/logret.abin";
+	file_type type = arma_binary;  
 	mat armaRet;
 	armaRet.load(fname, type);
 	armaRet = armaRet(span(0,5), span(0,2));
-
 	armaRet.print("armaRet = ");
-	  
 	const int r = armaRet.n_rows;
 	const int c = armaRet.n_cols;
+	*/
 
-	DistMatrix<double,STAR,VC> dmRet(r, c, grid);
-	DistMatrix<double,STAR,VC> dmRes(r, c, grid);
+	const int r = 4;
+	const int c = 2;
+
+	//Grid grid( comm_mat );
+	//DistMatrix<double,STAR,VC> dmRet(r, c, grid);
+	//DistMatrix<double,STAR,VC> dmRes(r, c, grid);
+
+	grid = new Grid(comm_mat);
+	dmRet = new DistMatrix<double,STAR,VC>(r, c, (*grid));
 
 	for (int i = 0; i < r; i++)
 	  for (int j = 0; j < c; j++)
-		dmRet.Set(i, j, armaRet(i,j));
+		dmRet->Set(i, j, (double)(i+j));
 
-	dmRet.Print("dmRet = ");
+	dmRet->Print("dmRet = ");
 
-	mygarch_par gp(comm_garch, dmRet, &dmRes);
+	//mygarch_par gp(comm_garch, dmRet, &dmRes);
+
+	cout << "Setting (0,0,-1)\n";
+	dmRet->Set(0, 0, -1);
+	cout << "newval = " << dmRet->Get(0,0) << endl;
+    dmRet->Print("dmRet_2 = ");
 	
   }
   
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  //MPI_Barrier(MPI_COMM_WORLD);
 
   if (rank < size_garch) {
 	MPI_Comm_rank(comm_garch, &grank);
 	MPI_Comm_size(comm_garch, &gsize);
 
 	// mygarch_par gp(comm_garch, dmRet, &dmRes);
-
 	// if (grank == 0) {
 	//   p.master();
 	// } else {
 	//   p.slave();
 	// }
+
+	cout << "Setting (0,0,-3)\n";
+	dmRet->Set(0, 0, -3);
+	cout << "newval = " << dmRet->Get(0,0) << endl;
+    dmRet->Print("dmRet_4 = ");
+	
+	
+  } else if (rank >= size_garch)  {
+
+	cout << "Setting (0,0,-2)\n";
+	dmRet->Set(0, 0, -2);
+	cout << "newval = " << dmRet->Get(0,0) << endl;
+    dmRet->Print("dmRet_3 = ");
+	
   }
- 
+
+  
+  
   // free all communicators
   if (comm_garch != MPI_COMM_NULL) MPI_Comm_free(&comm_garch);
   if (comm_mat != MPI_COMM_NULL) MPI_Comm_free(&comm_mat);

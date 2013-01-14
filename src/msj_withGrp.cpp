@@ -45,11 +45,11 @@ int t =  iL-1;  // idx of starting time (iL-1 <=> first possible day)
 int iT;         // total number of periods
 int iBeg, iEnd; // indices of the dates files to backtest over
 
-mat mnRet;     // returns for current period
-mat mnRetAll;  // returns for all periods
+//mat mnRet;     // returns for current period
+//mat mnRetAll;  // returns for all periods
 
 mat mnStart;   // hot-start parameter matrix
-mat mnResults; // matrix of marginal estimation results
+//mat mnResults; // matrix of marginal estimation results
 vec vnDates;   // dates corresponding to the rows of mnRetAll
 
 FILE* fReport;       // report file
@@ -108,12 +108,15 @@ int doLUT = 1;
 
 //-------------------------------------------------------------------------------
 
-// // sizes of each group
-// int size_world, size_garch, size_mat;
+// sizes of each group
+int size_world, size_garch, size_mat;
 
-// MPI_Group group_world, group_garch, group_mat;
-// MPI_Comm comm_garch, comm_mat;
+MPI_Group group_world, group_garch, group_mat;
+MPI_Comm comm_garch, comm_mat;
 
+Grid *grid;
+DistMatrix<double,STAR,VC> *dmRet; //(r, c, grid);
+DistMatrix<double,STAR,VC> *dmResults; //(r, c, grid);
 
 //-------------------------------------------------------------------------------
 // get memory usage
@@ -128,15 +131,17 @@ static void process_mem_usage() {
 // <main>
 
 static void finalize() {
+  //Finalize();
+  //MPI_Finalize();
   
-  // // free all communicators
-  // if (comm_garch != MPI_COMM_NULL) MPI_Comm_free(&comm_garch);
-  // if (comm_mat != MPI_COMM_NULL) MPI_Comm_free(&comm_mat);
+  // free all communicators
+  if (comm_garch != MPI_COMM_NULL) MPI_Comm_free(&comm_garch);
+  if (comm_mat != MPI_COMM_NULL) MPI_Comm_free(&comm_mat);
 
-  // // free all groups
-  // MPI_Group_free(&group_mat);
-  // MPI_Group_free(&group_garch);
-  // MPI_Group_free(&group_world);
+  // free all groups
+  MPI_Group_free(&group_mat);
+  MPI_Group_free(&group_garch);
+  MPI_Group_free(&group_world);
 
   // finalize
   MPI_Finalize();
@@ -151,6 +156,20 @@ static void printRange(int r[][3], string name) {
 
 //-------------------------------------------------------------------------------
 
+static int isGarchMaster(int rank) {
+
+  if (rank < size_garch) {
+	// get local rank
+	int grank;
+	MPI_Comm_rank(comm_garch, &grank);
+
+	if (grank == 0)
+	  return 1;
+	else
+	  return 0;
+  }
+  return 0;
+}
 
 //-------------------------------------------------------------------------------
 // <main>
@@ -163,9 +182,9 @@ int main(int argc, char **argv) {
   //==========================================
   // initialize MPI (old way)
   
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
+  // MPI_Init(&argc, &argv);
+  // MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  // MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
 
   //==========================================
  
@@ -179,7 +198,6 @@ int main(int argc, char **argv) {
   
   //==========================================
 
-  /*
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size_world);
@@ -208,8 +226,7 @@ int main(int argc, char **argv) {
   // set communicators for each non-world group
   MPI_Comm_create(MPI_COMM_WORLD, group_garch, &comm_garch);
   MPI_Comm_create(MPI_COMM_WORLD, group_mat, &comm_mat);
-  */
-  
+
   
   //==========================================
 
@@ -219,22 +236,19 @@ int main(int argc, char **argv) {
 	// print help and exit for "-h"
 	if (argc == 2 && strncmp(argv[1], "-h", 2) == 0)  {
 	  cout << "See msj.cpp for arguments." << endl;
-
-	  finalize();
-	  
+	  finalize();	  
 	  return 0;
 	}
 
 	if (argc == 2 && strncmp(argv[1], "-t", 2) == 0) {
 	  
 	  cout << "Building table...\n";
-
 	  double t_lut = MPI::Wtime();
 
 	  vec beta1 = linspace(-1,1,20);
 	  vec beta2 = linspace(-1,1,20);
 	  double df = 5.0;
-      double d = 30;
+	  double d = 30;
 	  int nSim = 10000;
 	  
 	  vec xGrid = linspace(-20,20,300);
@@ -314,7 +328,7 @@ int main(int argc, char **argv) {
 	
 	cout << ss.str();
 	
-    // Set random number generator seed
+	// Set random number generator seed
 	Stats::gsl_rng_init(seed);
 	
 	// set the number of elements in the MPI marginal message 
@@ -330,7 +344,7 @@ int main(int argc, char **argv) {
 	cout << "Loading return data..." << endl;
 	
 	//mnRetAll.load(dataFile + "_logret.csv", csv_ascii);
-	mnRetAll.load(dataFile + "_logret.abin", arma_binary);
+	//mnRetAll.load(dataFile + "_logret.abin", arma_binary);
 	vnDates.load(dataFile + "/dates.csv");
 	vnDates = vnDates(span(1,vnDates.n_rows-1));
 
@@ -340,22 +354,22 @@ int main(int argc, char **argv) {
 	cout << "border dates: " << (int)vnDates(idx0(0)) << ", " << (int)vnDates(idx1(0)) << endl;
 
 	// get column indices
-	int iTkr;
-	if (marginalCount > 0) {
-	  iTkr = marginalCount-1;
-	} else {
-	  iTkr = mnRetAll.n_cols-1;
-	}
+	// int iTkr;
+	// if (marginalCount > 0) {
+	//   iTkr = marginalCount-1;
+	// } else {
+	//   iTkr = mnRetAll.n_cols-1;
+	// }
 
 	iBeg = idx0(0) - iL + 1;
 	iEnd = idx1(0);
 
 	vnDates = vnDates(span(iBeg,iEnd));
-	mnRetAll = mnRetAll(span(iBeg,iEnd), span(0,iTkr));
+	//mnRetAll = mnRetAll(span(iBeg,iEnd), span(0,iTkr));
 	
-	assert(vnDates.n_rows == mnRetAll.n_rows);
+	//assert(vnDates.n_rows == mnRetAll.n_rows);
 	
-	cout << "size(mnRetAll) = " << mnRetAll.n_rows << ", " << mnRetAll.n_cols << endl;
+	//cout << "size(mnRetAll) = " << mnRetAll.n_rows << ", " << mnRetAll.n_cols << endl;
 	cout << "iBeg = " << iBeg << endl;
 	cout << "iEnd = " << iEnd << endl;
 
@@ -391,32 +405,67 @@ int main(int argc, char **argv) {
 
   }
 
-  // send time indices to all
-  MPI_Bcast(&iT, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&t, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  //
+  // Do group speciffic things...
+  //
 
+  // wait for all processes to get here
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  int grank, gsize;
+  
+  if (rank < size_garch) {
+	// send time indices to all
+	MPI_Bcast(&iT, 1, MPI_INT, 0, comm_garch);
+	MPI_Bcast(&t, 1, MPI_INT, 0, comm_garch);
 
+	/*
+	MPI_Comm_rank(comm_garch, &grank);
+	MPI_Comm_size(comm_garch, &gsize);
+	cout << "GARCH Member: ranks = [" << rank << ", " << grank << "], groupSize = " << gsize << endl;
+	*/
+
+  } else if (rank >= size_garch) {
+
+	MPI_Comm_rank(comm_mat, &grank);
+	MPI_Comm_size(comm_mat, &gsize);
+	//cout << "MAT Member: ranks = [" << rank << ", " << grank << "], groupSize = " << gsize << endl;
+
+	grid = new Grid(comm_mat);
+    dmResults = new DistMatrix<double,STAR,VC>(size_res, iS, (*grid));
+	//dmResults = new DistMatrix<double,STAR,VC>(10, 5, &grid);
+
+	//Grid* gridList;
+	//gridList = new Grid( comm_mat );
+	//DistMatrix<double,MC,MR>* realDistMatList;
+	//realDistMatList = new DistMatrix<double,MC,MR>( (*gridList) );
+  }
+  
+  
   while (1) {
 
-  	int hasData = distribute(rank);
+	int hasData = distribute(rank);
 
-  	if (hasData == false) {
+	if (hasData == false) {
 	  
-  	  if (rank == 0) {
+	  if (isGarchMaster(rank)) {
 
 		// close report file
 		fclose(fReport);
 		
-  		// export total runtime
-  		t_all = MPI::Wtime() - t_all;
-  	  }
+		// export total runtime
+		t_all = MPI::Wtime() - t_all;
+	  }
 
 	  finalize();
-	  
   	  return 0;
   	}
 	
-  	if (rank == 0) {
+  	if (isGarchMaster(rank)) {
+
+	  //Grid grid(comm_mat);
+	  //DistMatrix<double,STAR,VC> dmRes(10, 5, grid);
+
   	  master();
   	} else {	  
   	  slave();
@@ -444,13 +493,13 @@ static bool distribute(int rank) {
 	currentColumn = -1;
 
     // set the lookback returns
-	mnRet = mnRetAll(span(t-iL+1, t), span::all);
+	//mnRet = mnRetAll(span(t-iL+1, t), span::all);
 	t++;
 	
 	// set sizes of mnRet
 	// <TODO><VIP> This will fail when the number of stocks changes from day to day
-	rows = mnRet.n_rows; // iL
-	cols = mnRet.n_cols; // iS
+	rows = iL;  //mnRet.n_rows;
+	cols = iS; //mnRet.n_cols;
 
 	// set the number of hot start parameters
 	size_pars = 0;
@@ -459,22 +508,22 @@ static bool distribute(int rank) {
 	size_work = rows + size_pars;
 
 	// reset copula parameters
-	mnResults = zeros(size_res, cols);
+	//mnResults = zeros(size_res, cols);
 
   }
   
   // Broadcast parameters to all ranks
-  MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&size_work, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&size_res , 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&size_pars, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&startType, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&estMethod, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&t, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&depStruct, 1, MPI_INT, 0, MPI_COMM_WORLD); 
-  MPI_Bcast(&innovType, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&isSimple, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&rows, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&cols, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&size_work, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&size_res , 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&size_pars, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&startType, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&estMethod, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&t, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&depStruct, 1, MPI_INT, 0, comm_garch); 
+  MPI_Bcast(&innovType, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&isSimple, 1, MPI_INT, 0, comm_garch);
   
   return true;
 	
@@ -491,8 +540,8 @@ static void master(void) {
   int myrank, ntasks, rank;
   MPI_Status status;
 
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  MPI_Comm_size(comm_garch, &ntasks);
+  MPI_Comm_rank(comm_garch, &myrank);
 
   // Initialize the processor map
   int procMap[ntasks];
@@ -513,7 +562,7 @@ static void master(void) {
              MPI_DOUBLE,            // data item type is double 
              rank,                  // destination process rank 
              WORKTAG,               // user chosen message tag 
-             MPI_COMM_WORLD);       // default communicator 
+             comm_garch);       // default communicator 
 
 	procMap[rank] = currentColumn; // update the mnRet index in the processor map
   }
@@ -524,7 +573,7 @@ static void master(void) {
   while (ret == 0) {
 
     // Receive results from a slave
-    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, comm_garch, &status);
 
 	//printf("received result> from rank %u, %f, %f\n", status.MPI_SOURCE, result[0], result[3]);
     //printProcMap(procMap, ntasks);
@@ -534,7 +583,7 @@ static void master(void) {
     // Send the slave a new work unit
   	//printf("--> sending work 2> %f, %f\n", work[0], work[9]);
 
-    MPI_Send(&work, size_work, MPI_DOUBLE, status.MPI_SOURCE, WORKTAG, MPI_COMM_WORLD);
+    MPI_Send(&work, size_work, MPI_DOUBLE, status.MPI_SOURCE, WORKTAG, comm_garch);
 
 	// update the mnRet index in the processor map
     procMap[status.MPI_SOURCE] = currentColumn;
@@ -547,7 +596,7 @@ static void master(void) {
 
   for (rank = 1; rank < ntasks; ++rank) {
 	
-    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, comm_garch, &status);
 	
 	onMarginalComplete(procMap[status.MPI_SOURCE], result);
 
@@ -564,7 +613,7 @@ static void master(void) {
   
   // Tell all the slaves to exit by sending an empty message with the DIETAG.
   for (rank = 1; rank < ntasks; ++rank) {
-    MPI_Send(0, 0, MPI_DOUBLE, rank, DIETAG, MPI_COMM_WORLD);
+    MPI_Send(0, 0, MPI_DOUBLE, rank, DIETAG, comm_garch);
   }
 
   // Do the copula estimation now that we've got the marginals
@@ -586,7 +635,7 @@ static void slave(void) {
   while (1) {
 
     // Receive a message from the master 
-    MPI_Recv(&work, size_work, MPI_DOUBLE, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&work, size_work, MPI_DOUBLE, 0, MPI_ANY_TAG, comm_garch, &status);
 
     // Check the tag of the received message.
     if (status.MPI_TAG == DIETAG) {  
@@ -600,7 +649,7 @@ static void slave(void) {
 	}
 	
     // Send the result back 
-    MPI_Send(&result, size_res, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&result, size_res, MPI_DOUBLE, 0, 0, comm_garch);
 
   }
 }
@@ -617,17 +666,18 @@ static int get_next_work_item(double* work) {
   	return -1;
   }
 
-  /*
   string h5dir = dataFile + "/hdf5";
+
   vec ret;
   ret.load(h5dir + "/EQ_" + boost::lexical_cast<string>(currentColumn) + ".h5", hdf5_binary);
   ret = ret(span(iBeg,iEnd));
   
+  //cout << "size_pars = " << size_pars << ", size(ret) = " << ret.n_rows << ", " << ret.n_cols << endl;
+  
   for (int i = 0; i < ret.n_rows; i++)
 	work[i] = ret(i);
-  */
 
-  
+  /*
   switch(startType) {
 	
   case COLD:
@@ -637,7 +687,7 @@ static int get_next_work_item(double* work) {
 	
   case HOT:
 
-	// Note column size of mnet is row size of mnStart,
+	// Note column size of mnRet is row size of mnStart,
 	// thus the use of currentColumn for the row in mnStart.	
 	for (int i = 0; i < size_pars; i++)
 	  work[i] = mnStart(currentColumn, i);
@@ -650,6 +700,7 @@ static int get_next_work_item(double* work) {
   for (int r = size_pars; r < size_work; r++) {
 	work[r] = mnRet(r-size_pars, currentColumn);
   }
+  */
   
   //printf("getting work> currentColumn = %u, rows = %u, cols = %u, r = %u, work.length = %lu\n",
   //		 currentColumn, rows, cols, r, sizeof(work)/sizeof(double));
@@ -859,7 +910,8 @@ static void onMarginalComplete(int idx, double* result) {
 	
   // add result to results matrix
   for (int i = 0; i < size_res; i++) {
-	mnResults(i,idx) = result[i];
+	//mnResults(i,idx) = result[i];
+	dmResults.Set(i, idx, result[i]);
   }
 }
 
@@ -888,18 +940,21 @@ struct RunTimes
 // This uses the multivariate skew t distribution to directly model the
 // skewed t GARCH innovations.
 
-static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
+static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {  
 
   // RunTime structure
   RunTimes rt;
   
   // check sizes
-  assert(size_res == mnResults.n_rows);
-  assert(cols == mnResults.n_cols);
-  //assert(cols == mnRet.n_cols);
+  //assert(size_res == mnResults.n_rows);
+  //assert(cols == mnResults.n_cols);
+  assert(size_res == dmResults.Height());
+  assert(cols == dmResults.Width());
+
   assert(maxRMPQ > 0);
  
-  int iCoeffs = (int) mnResults(0,0);
+  //int iCoeffs = (int) mnResults(0,0);
+  int iCoeffs = (int) dmResults.Get(0,0);
   int iNonCoeffs = mygarch::iNonCoeffs;
   int i0 = iNonCoeffs + iCoeffs + 3*maxRMPQ;
   double shrinkage = 0.0;
@@ -1076,297 +1131,22 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
 }
 
 
-
-//-------------------------------------------------------------------------------
-// <MASTER>
-// This uses a copula for the dependence structure.
-
-static void riskForecast_copula(double &VaR, double &CVaR) {
-
-
-  // check sizes
-  assert(size_res == mnResults.n_rows);
-  assert(cols == mnResults.n_cols);
-  //assert(cols == mnRet.n_cols);
-  assert(maxRMPQ > 0);
-
-  int iCoeffs = (int) mnResults(0,0);
-  int iNonCoeffs = mygarch::iNonCoeffs;
-  int i0 = iNonCoeffs + iCoeffs + 3*maxRMPQ;
-
-  mat mnGarchRes = zeros(iL, cols);
-  mat mnGarchPars = zeros(i0, cols);
-  
-  for (int i = 0; i < cols; i++) {
-	mnGarchRes.col(i) = mnResults(span(i0, size_res-4-1), i);
-	mnGarchPars.col(i) = mnResults(span(0, i0-1), i);
-  }	
-
-  //
-  // VaR with MC
-  //
-  
-  mat resid;
- 
-  if (depStruct == 1) {
-	
-	//-----
-	// MSST
-	//-----
-	
-	// Compute sample covariance matrix  
-	mat mnCov;
-  
-	// scarse data setting: dimension is near the number of samples
-	if (doShrink) {
-	
-	  // use shrinkage estimator
-	  double shrinkage = 0.0;
-	  mnCov = Stats::cov2para(mnGarchRes, shrinkage);
-
-	  if (verbose) {
-		cout << "----> Using shrunken covariance with shrinkage = " << shrinkage << endl;
-	  }
-	
-	} else {
-
-	  // use sample covariance
-	  mnCov = cov(mnGarchRes);
-
-	  if (verbose) {
-		cout << "Using sample covariance" << endl;
-	  }
-	}
-
-	// set vectors gamma and mu
-	int idxGamma = size_res - 4;
-	int idxMu = size_res - 3;
-	
-	vec gamma = mnResults.row(idxGamma).t();
-	vec mu = mnResults.row(idxMu).t();
-	double df = 5.0;
-  
-	// Scale gamma - necessary for keeping C positive definite.
-	gamma = gammaScale*gamma;
-  
-	mat C  = mnCov*((df - 2.0)/df) - gamma*gamma.t() * (2.0*df)/((df - 2.0)*(df - 4.0));
-  
-	// Adjust C to be positive definite
-	//t_adjust = MPI::Wtime();
-
-	if (doCheckEigs) {
-	  vec eigval;
-	  mat eigvec;
-	  uvec idxNeg;
-	
-	  // eigensystem for symmetric matrix, using faster divide and conquer ('"dc") method
-	  eig_sym(eigval, eigvec, C, "dc");
-	  idxNeg = find(eigval < 0.0);
-	  int iNeg = idxNeg.n_rows;
-  
-	  if (verbose) {
-		cout << "Number of negative eigenvalues before fix: " << iNeg << endl;
-	  }
-
-	  if (iNeg > 0) {
-		// P*D*P'
-		C = eigvec * diagmat(abs(eigval)) * eigvec.t();
-		eig_sym(eigval, eigvec, C, "dc");
-		idxNeg = find(eigval < 0.0);
-	  
-		if (verbose) {
-		  cout << "Number of negative eigenvalues after fix: " << idxNeg.n_rows << endl;
-		}
-	  }
-	}
-  
-	//t_adjust = MPI::Wtime() - t_adjust;
-	//t_sample = MPI::Wtime();
-  
-	// simulate Monte Carlo sample from the multivariate residual distribution
-	resid = myskewt::mvskewtrnd_1(gamma, mu, df, C, nSim);
-
-	//t_sample = MPI::Wtime() - t_sample;
-	
-  } else if (depStruct == 2) {
-	
-	//-------------------------------------------------------------------------------
-	// ASSG
-	//-------------------------------------------------------------------------------
-
-	assert(0 && "Implemenation Not Finished");
-
-	// set vectors gamma and mu
-	int idxAlpha = size_res - 4;
-	int idxSigma = size_res - 3;
-	int idxMu = size_res - 2;
-
-	vec alpha = mnResults.row(idxAlpha).t();
-	vec sigma = mnResults.row(idxSigma).t();
-	vec mu    = mnResults.row(idxMu).t();
-
-	// estimate scalar alpha
-	double alphaHat = mystable::assg_alphaEst(alpha);
-
-	// estimate matrix Sigma
-	mat SigmaHat = mystable::assg_dispersionEst(mnGarchRes, alphaHat, sigma, mu);
-	
-	// Adjust C to be positive definite
-	//t_adjust = MPI::Wtime();
-
-	if (doCheckEigs) {
-	  vec eigval;
-	  mat eigvec;
-	  uvec idxNeg;
-	
-	  // eigensystem (symmetric)
-	  eig_sym(eigval, eigvec, SigmaHat, "dc");
-	  idxNeg = find(eigval < 0.0);
-	  int iNeg = idxNeg.n_rows;
-  
-	  if (verbose) {
-		cout << "Number of negative eigenvalues before fix: " << iNeg << endl;
-	  }
-
-	  if (iNeg > 0) {
-		// P*D*P'
-		SigmaHat = eigvec * diagmat(abs(eigval)) * eigvec.t();
-		eig_sym(eigval, eigvec, SigmaHat, "dc");
-		idxNeg = find(eigval < 0.0);
-	  
-		if (verbose) {
-		  cout << "Number of negative eigenvalues after fix: " << idxNeg.n_rows << endl;
-		}
-	  }
-	}
-  
-	//<TODO> sample from ASSG
-	
-  } else {
-	assert(0 && "Unknown dependence structure.");
-  }
-
-  // Transform simulated values into copula space
-
-  for (int i = 0; i < resid.n_cols; i++) {
-	vec x0 = resid.col(i);
-	vec x1 = zeros(nSim);
-	vec Fx = zeros(nSim);
-
-	Stats::empCDF_fast(x0, x1, Fx);
-
-	// truncate CDF values
-	uvec idx = find(Fx < cdfTol);
-	Fx.elem(idx) = cdfTol * ones(idx.n_rows);
-	
-	idx = find(Fx > 1.0-cdfTol);
-	Fx.elem(idx) = (1.0-cdfTol) * ones(idx.n_rows);
-	
-	// keep CDF within (0,1)
-	// Fx = min(Fx, 1.0 - cdfTol);
-	// Fx = max(Fx, cdfTol);
-
-	//cout << "size(Fx): " << Fx.n_rows << endl;
-	
-	resid.col(i) = Fx;
-  }
-
-  // get innovation distribution
-  int nparam;
-  mystable::dist dist;
-  	
-  switch (innovType) {
-  case 1:
-	{
-	  assert(0 && "not implemented");
-	}
-	break;
-  case 2:
-	{
-	  dist = mystable::stdAS;
-	}
-	break;
-  case 3:
-	{
-	  dist = mystable::stdCTS;
-	}
-	break;	  
-  case 4:
-	{
-	  dist = mystable::stdNTS;
-	}
-	break;	  
-  default:
-	assert(0 && "Unknown dependence type");
-  }
-
-  // get parameter count
-  nparam = mystable::getParCount(dist);
-  vec param(nparam);
-  vec icdf(nSim);
-  int i00 = size_res - 4; // starting index of innovation paramters
-
-  // forecast stock returns using ARMA-GARCH with copula residuals
-  mat stockRets(nSim, iS);
-  
-  for (int i = 0; i < iS; i++) {
-	
-	param = mnResults(span(i00, i00 + nparam - 1), i);
-
-	/*
-	  cout << ">> Stock " << i << ": " << mystable::dist2str(dist) << endl;
-	  param.print("param = ");
-	  vec arg = resid.col(i);
-	  arg.save("e_res.csv", csv_ascii);
-	*/
-	
-	icdf = mystable::inv_FFT(resid.col(i), nparam, param.memptr(), dist);
-	
-	// GARCH return forecast
-	//stockRets.col(i) = mygarch::forecast(gs[i], resid.col(i));
-	//stockRets.col(i) = mygarch::forecast_fromVec(mnGarchPars.col(i), resid.col(i));
-	
-	//stockRets.col(i) = mygarch::forecast_fromVec(mnGarchPars.col(i), icdf);
-	assert(0 && "Uncomment the above line first and update it for new method format.");
-	
-  }
-
-  // portfolio returns for each path
-  vec portRets = stockRets*wts;
-
-  // GSL quantile for VaR
-  gsl_vector* pr = gsl_vector_alloc(portRets.n_rows);
-
-  // <TODO> just get a pointer to portRets instead of memcopying
-  for (int i = 0; i < portRets.n_rows; i++)
-	gsl_vector_set(pr, i, portRets(i));
-
-  gsl_sort(pr->data, pr->stride, pr->size);
-  VaR = gsl_stats_quantile_from_sorted_data(pr->data, pr->stride, pr->size, VaR_epsilon);
-
-  gsl_vector_free(pr);
- 
-}
-
-
 //-------------------------------------------------------------------------------
 // <MASTER>
 
 void onMarginalsComplete() {
 
-  t_garch = MPI::Wtime() - t_garch;
-
   double date = vnDates(t-1);
 
-  if (margOnly == 1) {
-	double t0 = MPI::Wtime();
-	string file = reportFile + "/mnResults/" + boost::lexical_cast<string>(date) + ".csv";
-	mnResults.save(file, csv_ascii);
-	cout << "----> Exported mnResults to " << file << " (" << MPI::Wtime()-t0<< " sec)\n";
-  }
-
-  // time for the entire non-GARCH part
-  double t_forc = MPI::Wtime();
+  /*
+  double t0 = MPI::Wtime();
+  string file = reportFile + "/mnResults/" + boost::lexical_cast<string>(date) + ".csv";
+  mnResults.save(file, csv_ascii);
+  cout << "----> Exported mnResults to " << file << " (" << MPI::Wtime()-t0<< " sec)\n";
+  */
+  
+  t_garch = MPI::Wtime() - t_garch; 
+  double t_forc = MPI::Wtime(); // time for the entire non-GARCH part
   
   // forecast risk
   double VaR_mc, VaR_lut;
@@ -1394,7 +1174,7 @@ void onMarginalsComplete() {
   }
   
   // Note t is the index of the NEXT returns b/c it was already incremented in the distribute() method.
-  double nextRet = sum(mnRetAll(t, span::all).t() % wts); 
+  double nextRet = 0.0; //sum(mnRetAll(t, span::all).t() % wts); 
 
   t_period = MPI::Wtime() - t_period;
   t_forc = MPI::Wtime() - t_forc;

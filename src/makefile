@@ -1,16 +1,13 @@
 #-------------------------------------------------------------------------------
 ##  Author: Jimmie Goode
 ##  Created: 2012-09-01
-##  Version: 1.0
-#
-# mpirun -np 2 ./tester -df ../data/csi_20030101_20120801_v3 -mc 5 -maxT 1009 -nSims 10000 -v 0 -rf ../data/exports/test -margOnly 0 -innovType 3 -depStruct 1
 #-------------------------------------------------------------------------------
 
 OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
 #OBJS = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
 #OBJS = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
 #OBJS     = mygarch_par.o #MasterSlave.o
-#OBJS = Backtest.o MasterSlave.o mygarch_par.o IO.o
+#OBJS     = Backtest.o MasterSlave.o mygarch_par.o IO.o
 EXE      = ../bin/HFRisk
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
@@ -25,12 +22,12 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
-#CCMPI     = mpic++
-CCMPI     = g++
+#CCMPI = mpic++ # uses clang++ which is broke
+CCMPI  = g++
 MPICCF = -L/opt/local/lib -lmpi_cxx -lmpi -lm
 BOOST  = -I/opt/local/include
 GSL    = -I/opt/local/include/gsl
@@ -106,7 +103,7 @@ myskewt.o: myskewt.hpp myskewt.cpp Constants.h gamma.h IO.hpp Stats.hpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) myskewt.cpp
 
 msj.o: msj.h msj.cpp IO.hpp Stats.hpp mygarch.hpp myskewt.hpp mystable.hpp myskewt_lut.hpp
-	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) ${ELEM_COMPILE_FLAGS} msj.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) msj.cpp
 
 IO.o: IO.hpp IO.cpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) IO.cpp
