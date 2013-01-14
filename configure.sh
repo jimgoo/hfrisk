@@ -1,9 +1,10 @@
 #--------------------------------------------------------------
-
 mkdir lib
 cd lib
 
-LIBDIR="/gpfs/home3/j/jgoode/lib"
+
+#LIBDIR="/gpfs/home3/j/jgoode/lib"
+LIBDIR="/nfs/user01/jimmie21/github/hfrisk/lib"
 
 #--------------------------------------------------------------
 # Download all libs
@@ -92,25 +93,13 @@ make install
 #--------------------------------------------------------------
 # HDF5 is used by Armadillo
 
-# cd ../
-# cd hdf5-1.8.9/
-# ./configure --prefix=/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install --enable-fortran --enable-cxx
+cd ../
+cd hdf5-1.8.9/
+./configure --prefix=${LIBDIR}/hdf5-1.8.9/install --enable-fortran --enable-cxx
 
 
 #--------------------------------------------------------------
 # Armadillo (one needy bitch, got to do it by hand)
-
-# <TODO> Re-compile with these existing BLAS/LAPACK libraries:
-# BLAS = /bgl/apps/blacs/BLACS/LIB
-# LAPACK = /bgl/apps/lapack
-
-# mpixlf77  -o example1 example1.f \
-# 	-L/bgl/apps/scalapack -lscalapack \
-# 	-L/bgl/apps/blacs/BLACS/LIB \
-# 	-lblacsF77init_MPI-BGL-0 \
-# 	-lblacs_MPI-BGL-0 -lblacsF77init_MPI-BGL-0 \
-# 	-L/bgl/apps/lapack \
-# 	-llapack_BGL -lblas_BGL
 
 cd ../
 cd armadillo-3.6.1/
@@ -119,7 +108,8 @@ mkdir install
 cmake . 
 make
 make install DESTDIR=${LIBDIR}/armadillo-3.6.1/install
-#Open:
+
+# Now open:
 #	armadillo-3.6.1/install/armadillo_bits/config.hpp
 # Comment out these:
 #	define ARMA_USE_WRAPPER
