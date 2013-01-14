@@ -24,7 +24,7 @@
 #include <armadillo>
 
 // LOCAL
-#include "IO.h"
+#include "IO.hpp"
 #include "Stats.hpp"
 #include "myskewt.hpp"
 

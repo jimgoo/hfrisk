@@ -4,16 +4,17 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
-//#include <stdio.h>
-
 
 #include <mpi.h>
-//#include "elemental.hpp"
+#include "elemental.hpp"
 
-//#include "MasterSlave.hpp"
+#include "IO.hpp"
+#include "mygarch_par.hpp"
+
 
 using namespace std;
-//using namespace elem;
+using namespace elem;
+
 
 class Backtest {
 

@@ -2,15 +2,11 @@
 CG_DATA="/nfs/user03/jimmie21/data"
 CG_LUT="/nfs/user03/jimmie21/LUTs"
 
-#CG_DATA="/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/csi/patentData"
-#CG_LUT="/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/LUTs"
-
-################################################
 CG_EXP="${CG_DATA}/exports"
 
 mkdir ${CG_EXP}
 
-mpirun -np 4 ../lib/tester \
+mpirun -np 4 ../bin/HFRisk \
 	-x OMP_NUM_THREADS \
 	-df "${CG_DATA}/csi_20030101_20120801_v3" \
 	-rf "${CG_EXP}/20130105_ST" \

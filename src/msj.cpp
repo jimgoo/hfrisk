@@ -107,6 +107,15 @@ vec wts;
 int doLUT = 1;
 
 //-------------------------------------------------------------------------------
+
+// sizes of each group
+int size_world, size_garch, size_mat;
+
+MPI_Group group_world, group_garch, group_mat;
+MPI_Comm comm_garch, comm_mat;
+
+
+//-------------------------------------------------------------------------------
 // get memory usage
 
 static void process_mem_usage() {
@@ -119,8 +128,44 @@ static void process_mem_usage() {
 // <main>
 
 static void finalize() {
-  Finalize();
+  //Finalize();
   //MPI_Finalize();
+  
+  // free all communicators
+  if (comm_garch != MPI_COMM_NULL) MPI_Comm_free(&comm_garch);
+  if (comm_mat != MPI_COMM_NULL) MPI_Comm_free(&comm_mat);
+
+  // free all groups
+  MPI_Group_free(&group_mat);
+  MPI_Group_free(&group_garch);
+  MPI_Group_free(&group_world);
+
+  // finalize
+  MPI_Finalize();
+}
+
+//-------------------------------------------------------------------------------
+
+static void printRange(int r[][3], string name) {
+  int i = 0;
+  cout << name << " = [" << r[i][0] << ", " << r[i][1] << ", " << r[i][2] << "]" << endl;
+}
+
+//-------------------------------------------------------------------------------
+
+static int isGarchMaster(int rank) {
+
+  if (rank < size_garch) {
+	// get local rank
+	int grank;
+	MPI_Comm_rank(comm_garch, &grank);
+
+	if (grank == 0)
+	  return 1;
+	else
+	  return 0;
+  }
+  return 0;
 }
 
 //-------------------------------------------------------------------------------
@@ -128,7 +173,7 @@ static void finalize() {
 
 int main(int argc, char **argv) {
   
-  int myrank, ntasks;
+  int rank, ntasks;
   double t_all;
 
   //==========================================
@@ -140,18 +185,52 @@ int main(int argc, char **argv) {
 
   //==========================================
  
-  Initialize( argc, argv );
-  mpi::Comm comm = mpi::COMM_WORLD;
-  myrank = mpi::CommRank(comm);
-  ntasks = mpi::CommSize(comm);
+  // Initialize( argc, argv );
+  // mpi::Comm comm = mpi::COMM_WORLD;
+  // myrank = mpi::CommRank(comm);
+  // ntasks = mpi::CommSize(comm);
 
   // cout << "ntasks = " << ntasks << endl;
   // Grid g( comm );
   
   //==========================================
 
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size_world);
+
+  size_garch = size_world - 1;
+  size_mat = 1;
+  
+  // check that group sizes sum to total world size
+  assert(size_world == (size_garch + size_mat));
+
+  // Set the inclusion rank arrays of form {minRank, maxRank, stride}.
+  // The ordering is global = {garch, mat}.
+  int range_garch[][3] = {0, size_garch-1, 1};
+  int range_mat[][3] = {size_garch, size_garch+size_mat-1, 1};
+
+  if (rank == 0) {
+	printRange(range_garch, "range_garch");
+	printRange(range_mat, "range_mat");
+  }
+
+  // set all groups
+  MPI_Comm_group(MPI_COMM_WORLD, &group_world);
+  MPI_Group_range_incl(group_world, 1, range_garch, &group_garch);
+  MPI_Group_range_incl(group_world, 1, range_mat, &group_mat);
+  
+  // set communicators for each non-world group
+  MPI_Comm_create(MPI_COMM_WORLD, group_garch, &comm_garch);
+  MPI_Comm_create(MPI_COMM_WORLD, group_mat, &comm_mat);
+
+  //Grid grid(comm_mat);
+  //DistMatrix<double,STAR,VC> dmRes(10, 5, grid);
+
+  //==========================================
+
   // parse command line args
-  if (myrank == 0) {
+  if (rank == 0) {
 	
 	// print help and exit for "-h"
 	if (argc == 2 && strncmp(argv[1], "-h", 2) == 0)  {
@@ -308,14 +387,6 @@ int main(int argc, char **argv) {
 	system(("mkdir " + reportFile).c_str());
 	system(("mkdir " + reportFile + "/mnResults").c_str());
 	fReport = fopen((reportFile + "/forc.csv").c_str(), "w+");
-
-	// fprintf(fReport, "%s\n",
-	// 		"t, date, VaR_mc, VaR_lut, nextRet, t_garch, " +
-	// 		"t_dep_est_mc, t_dep_est_lut, " +
-	// 		"t_chol_mc, t_chol_lut, " +
-	// 		"t_VaR_mc, t_VaR_lut, " +
-	// 		"t_total_mc, t_total_lut");
-
 	fclose(fReport);
 
 	// write the configuration to file
@@ -337,16 +408,17 @@ int main(int argc, char **argv) {
   }
 
   // send time indices to all
-  MPI_Bcast(&iT, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&t, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&iT, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&t, 1, MPI_INT, 0, comm_garch);
 
 
   while (1) {
 
-  	int hasData = distribute(myrank);
+  	int hasData = distribute(rank);
 
   	if (hasData == false) {
-  	  if (myrank == 0) {
+	  
+  	  if (isGarchMaster(rank)) {
 
 		// close report file
 		fclose(fReport);
@@ -360,7 +432,7 @@ int main(int argc, char **argv) {
   	  return 0;
   	}
 	
-  	if (myrank == 0) {
+  	if (isGarchMaster(rank)) {
   	  master();
   	} else {	  
   	  slave();
@@ -408,17 +480,17 @@ static bool distribute(int rank) {
   }
   
   // Broadcast parameters to all ranks
-  MPI_Bcast(&rows, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&size_work, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&size_res , 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&size_pars, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&startType, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&estMethod, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&t, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&depStruct, 1, MPI_INT, 0, MPI_COMM_WORLD); 
-  MPI_Bcast(&innovType, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&isSimple, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&rows, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&cols, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&size_work, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&size_res , 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&size_pars, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&startType, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&estMethod, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&t, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&depStruct, 1, MPI_INT, 0, comm_garch); 
+  MPI_Bcast(&innovType, 1, MPI_INT, 0, comm_garch);
+  MPI_Bcast(&isSimple, 1, MPI_INT, 0, comm_garch);
   
   return true;
 	
@@ -435,8 +507,8 @@ static void master(void) {
   int myrank, ntasks, rank;
   MPI_Status status;
 
-  MPI_Comm_size(MPI_COMM_WORLD, &ntasks);
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  MPI_Comm_size(comm_garch, &ntasks);
+  MPI_Comm_rank(comm_garch, &myrank);
 
   // Initialize the processor map
   int procMap[ntasks];
@@ -457,7 +529,7 @@ static void master(void) {
              MPI_DOUBLE,            // data item type is double 
              rank,                  // destination process rank 
              WORKTAG,               // user chosen message tag 
-             MPI_COMM_WORLD);       // default communicator 
+             comm_garch);       // default communicator 
 
 	procMap[rank] = currentColumn; // update the mnRet index in the processor map
   }
@@ -468,7 +540,7 @@ static void master(void) {
   while (ret == 0) {
 
     // Receive results from a slave
-    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, comm_garch, &status);
 
 	//printf("received result> from rank %u, %f, %f\n", status.MPI_SOURCE, result[0], result[3]);
     //printProcMap(procMap, ntasks);
@@ -478,7 +550,7 @@ static void master(void) {
     // Send the slave a new work unit
   	//printf("--> sending work 2> %f, %f\n", work[0], work[9]);
 
-    MPI_Send(&work, size_work, MPI_DOUBLE, status.MPI_SOURCE, WORKTAG, MPI_COMM_WORLD);
+    MPI_Send(&work, size_work, MPI_DOUBLE, status.MPI_SOURCE, WORKTAG, comm_garch);
 
 	// update the mnRet index in the processor map
     procMap[status.MPI_SOURCE] = currentColumn;
@@ -491,7 +563,7 @@ static void master(void) {
 
   for (rank = 1; rank < ntasks; ++rank) {
 	
-    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&result, size_res, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, comm_garch, &status);
 	
 	onMarginalComplete(procMap[status.MPI_SOURCE], result);
 
@@ -508,7 +580,7 @@ static void master(void) {
   
   // Tell all the slaves to exit by sending an empty message with the DIETAG.
   for (rank = 1; rank < ntasks; ++rank) {
-    MPI_Send(0, 0, MPI_DOUBLE, rank, DIETAG, MPI_COMM_WORLD);
+    MPI_Send(0, 0, MPI_DOUBLE, rank, DIETAG, comm_garch);
   }
 
   // Do the copula estimation now that we've got the marginals
@@ -530,7 +602,7 @@ static void slave(void) {
   while (1) {
 
     // Receive a message from the master 
-    MPI_Recv(&work, size_work, MPI_DOUBLE, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Recv(&work, size_work, MPI_DOUBLE, 0, MPI_ANY_TAG, comm_garch, &status);
 
     // Check the tag of the received message.
     if (status.MPI_TAG == DIETAG) {  
@@ -544,10 +616,8 @@ static void slave(void) {
 	}
 	
     // Send the result back 
-    MPI_Send(&result, size_res, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    MPI_Send(&result, size_res, MPI_DOUBLE, 0, 0, comm_garch);
 
-	//cout << "---> mem for slave " << endl;
-	//process_mem_usage();
   }
 }
 
@@ -838,7 +908,7 @@ struct RunTimes
 
 static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
   
-
+  /*
   cout << "----> Making grid...\n";
 
   mpi::Comm comm = mpi::COMM_WORLD;
@@ -854,6 +924,7 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
   // }
   
   cout << "----> Done." << endl;
+  */
   
 
   // RunTime structure

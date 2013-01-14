@@ -6,7 +6,7 @@ CG_EXP="${CG_DATA}/exports"
 
 mkdir ${CG_EXP}
 
-mpirun -np 2 ../lib/tester \
+mpirun -np 2 ../bin/HFRisk \
 	-x OMP_NUM_THREADS \
 	-df "${CG_DATA}/csi_20030101_20120801_v3" \
 	-rf "${CG_EXP}/20130105_ST" \

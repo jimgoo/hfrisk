@@ -34,7 +34,7 @@
 #include "Constants.h"
 #include "gamma.h"
 #include "skeweduvstudenttpdf.h"
-#include "IO.h"
+#include "IO.hpp"
 #include "Stats.hpp"
 
 using namespace std;

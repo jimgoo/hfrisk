@@ -5,7 +5,7 @@
 
 // Utilities for importing and exporting data.
 
-#include "IO.h"
+#include "IO.hpp"
 
 using namespace std;
 
@@ -156,5 +156,23 @@ void IO::exportDoubleArray(double * arr, string filename, int length) {
 	fprintf(outfile,"%+10.20f \n", arr[i]);
   }  
   fclose(outfile);
+}
+*/
+
+
+//-------------------------------------------------------------------------------
+// Data is distributed by columns across each process
+/*
+DistMatrix<double, STAR, VC> IO::arma2distMat(string fname, arma::file_type type, elem::Grid grid) {
+
+  mat armaRet;
+  armaRet.load(fname, type);
+
+  const int r = armaRet.n_rows;
+  const int c = armaRet.n_cols;
+
+  DistMatrix<double, STAR, VC> dmRet(r, c, grid);
+
+  return dmRet;
 }
 */

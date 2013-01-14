@@ -6,14 +6,12 @@
 # mpirun -np 2 ./tester -df ../data/csi_20030101_20120801_v3 -mc 5 -maxT 1009 -nSims 10000 -v 0 -rf ../data/exports/test -margOnly 0 -innovType 3 -depStruct 1
 #-------------------------------------------------------------------------------
 
-#OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
+OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
 #OBJS = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
 #OBJS = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
 #OBJS     = mygarch_par.o #MasterSlave.o
-
-#OBJS = MasterSlave.o mygarch_par.o
-OBJS = Backtest.o
-EXE      = ../lib/tester
+#OBJS = Backtest.o MasterSlave.o mygarch_par.o IO.o
+EXE      = ../bin/HFRisk
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
 LFLAGS   = -Wall $(DEBUG)
@@ -27,7 +25,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -104,14 +102,14 @@ main: $(OBJS)
 Constants.o: Constants.h Constants.cpp
 	$(CCMPI) $(CFLAGS) Constants.cpp
 
-myskewt.o: myskewt.hpp myskewt.cpp Constants.h gamma.h IO.h Stats.hpp
+myskewt.o: myskewt.hpp myskewt.cpp Constants.h gamma.h IO.hpp Stats.hpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) myskewt.cpp
 
-msj.o: msj.h msj.cpp IO.h Stats.hpp mygarch.hpp myskewt.hpp mystable.hpp myskewt_lut.hpp
+msj.o: msj.h msj.cpp IO.hpp Stats.hpp mygarch.hpp myskewt.hpp mystable.hpp myskewt_lut.hpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) ${ELEM_COMPILE_FLAGS} msj.cpp
 
-IO.o: IO.h IO.cpp
-	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) IO.cpp
+IO.o: IO.hpp IO.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) IO.cpp
 
 Stats.o: Stats.hpp Stats.cpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) $(MPI) $(HDF5_I) Stats.cpp
@@ -122,7 +120,7 @@ gamma.o: gamma.h gamma.cpp
 skeweduvstudenttpdf.o: skeweduvstudenttpdf.h skeweduvstudenttpdf.cpp gamma.h
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) skeweduvstudenttpdf.cpp
 
-mygarch.o: mygarch.hpp mygarch.cpp Stats.hpp IO.h 
+mygarch.o: mygarch.hpp mygarch.cpp Stats.hpp IO.hpp 
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) mygarch.cpp
 
 mystable.o: mystable.hpp mystable.cpp Stats.hpp
@@ -138,7 +136,7 @@ ShardBinaries: ShardBinaries.cpp
 	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
 
 mygarch_par.o: mygarch_par.cpp mygarch.hpp MasterSlave.hpp
-	$(CCMPI) $(CFLAGS) ${ELEM_COMPILE_FLAGS} $(MPI) mygarch_par.cpp
+	$(CCMPI) $(CFLAGS) ${ELEM_COMPILE_FLAGS} $(MPI) $(AD_I) mygarch_par.cpp
 
 MasterSlave.o: MasterSlave.hpp MasterSlave.cpp
 	$(CCMPI) $(CFLAGS) $(MPI) MasterSlave.cpp
@@ -147,7 +145,7 @@ SymmetricEig: SymmetricEig.cpp
 	${CXX} ${ELEM_COMPILE_FLAGS} $< -o $@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
 Backtest.o: Backtest.hpp Backtest.cpp
-	$(CCMPI) $(CFLAGS) $(MPI) Backtest.cpp
+	$(CCMPI) $(CFLAGS) $(MPI) $(AD_I) ${ELEM_COMPILE_FLAGS} Backtest.cpp
 
 clean:
 	rm -rf *.o *.out $(EXE)

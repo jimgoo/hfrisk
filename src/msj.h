@@ -15,7 +15,7 @@
 //#include <boost/filesystem.hpp>
 #include "elemental.hpp"
 
-#include "IO.h"
+#include "IO.hpp"
 #include "Stats.hpp"
 #include "mygarch.hpp"
 #include "myskewt.hpp"
