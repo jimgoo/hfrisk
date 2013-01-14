@@ -617,6 +617,7 @@ static int get_next_work_item(double* work) {
   	return -1;
   }
 
+  // Import returns from HDF5 file
   /*
   string h5dir = dataFile + "/hdf5";
   vec ret;
@@ -627,7 +628,6 @@ static int get_next_work_item(double* work) {
 	work[i] = ret(i);
   */
 
-  
   switch(startType) {
 	
   case COLD:
@@ -1358,10 +1358,11 @@ void onMarginalsComplete() {
 
   double date = vnDates(t-1);
 
+  // save results to binary file
   if (margOnly == 1) {
 	double t0 = MPI::Wtime();
-	string file = reportFile + "/mnResults/" + boost::lexical_cast<string>(date) + ".csv";
-	mnResults.save(file, csv_ascii);
+	string file = reportFile + "/mnResults/" + boost::lexical_cast<string>(date) + ".h5";
+	mnResults.save(file, hdf5_binary);
 	cout << "----> Exported mnResults to " << file << " (" << MPI::Wtime()-t0<< " sec)\n";
   }
 
