@@ -8,6 +8,7 @@ OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.
 #OBJS = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
 #OBJS     = mygarch_par.o #MasterSlave.o
 #OBJS     = Backtest.o MasterSlave.o mygarch_par.o IO.o
+OBJS     = Copula.o Stats.o
 EXE      = ../bin/HFRisk
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
@@ -22,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -143,6 +144,9 @@ SymmetricEig: SymmetricEig.cpp
 
 Backtest.o: Backtest.hpp Backtest.cpp
 	$(CCMPI) $(CFLAGS) $(MPI) $(AD_I) ${ELEM_COMPILE_FLAGS} Backtest.cpp
+
+Copula.o: Copula.cpp Stats.o
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) ${ELEM_COMPILE_FLAGS} Copula.cpp
 
 clean:
 	rm -rf *.o *.out $(EXE)
