@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
 	  }
 	}
 
-	double p = (1.0/((double)gRows))*Ysum - samSum;
+	const double p = (1.0/((double)gRows))*Ysum - samSum;
 	
 	//cout << "p = " << p << endl;
 
@@ -226,7 +226,7 @@ int main(int argc, char* argv[]) {
 	//
 
 
-	Y.Print("Y = ");
+	//Y.Print("Y = ");
 	
 	Zeros(gCols, 1, colSum);
 
@@ -235,7 +235,7 @@ int main(int argc, char* argv[]) {
 	  for (int i = 0; i < gRows; i++)
 		colSum.Set(j, 0, colSum.Get(j,0) + Y.Get(i,j));
 
-	colSum.Print("colSum = ");
+	//colSum.Print("colSum = ");
 
 	// subtract column means
 	for (int j = 0; j < gCols; j++)
@@ -243,27 +243,31 @@ int main(int argc, char* argv[]) {
 		Y.Set(i, j, Y.Get(i,j) - colSum.Get(j,0)/((double)gRows));
 
 	// tmp1 = 1/t * Y' * Y
-    alpha = 1.0/((double)gRows);
+    alpha = 1.0/((double)gRows - 1.0);
 	
 	Gemm(TRANSPOSE, NORMAL, alpha, Y, Y, (double)0, tmp1);
 
-	tmp1.Print("cov(Y) = ");
+	//tmp1.Print("cov(Y) = ");
 
-	
 	double rDiag = 0.0;
 	for (int j = 0; j < gCols; j++)
-	  for (int i = 0; i < gRows; i++)
+	  for (int i = 0; i < gCols; i++)
 		rDiag += tmp1.Get(i,j);
 
 	rDiag = (1.0/((double)gCols))*rDiag;
 
-	//cout << "rDiag = " << rDiag << endl;
-	
-	
+	const double k = (p - rDiag)/c;
+	const double shrinkage = std::max(0.0, std::min(1.0, k/((double)gRows)));
+
+	// shrinkage*prior + (1-shrinkage)*sample
+	Gemm(NORMAL, NORMAL, shrinkage, prior, eye, 1.0-shrinkage, sample);
+
+	sample.Print("Final = ");
+
 	//-------------------------------------------------------------------------------
 	
 	if (commRank == 0) {
- 
+
 	  int t = mnGarch.n_rows;
 	  int n = mnGarch.n_cols;
 
@@ -277,6 +281,8 @@ int main(int argc, char* argv[]) {
 
 	  double ds;
 	  mat aS = Stats::cov2para(mnGarch, ds);
+
+	  aS.print("armaFinal = ");
 	}
 
 
@@ -295,34 +301,3 @@ int main(int argc, char* argv[]) {
   
   return 0;
 }
-
-/*
-static DistMatrix<R> DistMatCov(DistMatrix<R> X) {
-
-  int t = X.Height();
-  int n = X.Width();
-
-  double dt = (double) t;
-  
-  DistMatrix<R> colSum(n, 1, g);
-  Zeros(n, 1, colSum);
-
-  // compute column sums for the means
-  for (int j = 0; j < n; j++)
-	for (int i = 0; i < gRows; i++)
-	  colSum.Set(j, 0, colSum.Get(j,0) + X.Get(i,j));
-
-  // subtract column means
-  for (int j = 0; j < n; j++)
-	for (int i = 0; i < gRows; i++)
-	  X.Set(i, j, X.Get(i,j) - colSum.Get(j,0)/dt);
-
-  // cov = 1/t * X' * X'
-  DistMatrix<R> sample(n, n, g);
-  double alpha = 1.0/dt;
-	
-  Gemm(TRANSPOSE, NORMAL, alpha, X, X, (double)0, sample);
-
-  return sample
-}
-*/

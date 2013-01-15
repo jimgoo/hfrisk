@@ -441,27 +441,18 @@ mat Stats::cov2para(mat X, double &shrinkage) {
   
   double p = (1.0/t)*arma::sum(arma::sum(Y.t()*Y)) - arma::sum(arma::sum(arma::pow(sample, 2.0)));
   double r = 0.0;
-  
-  double rdiag = (1.0/n)*arma::sum(arma::sum(arma::cov(Y)));
+  double rdiag = (1.0/((double)n))*arma::sum(arma::sum(arma::cov(Y)));
   double roff = 0.0;
-
-  //cout << "----> Stats:: arma::sum(arma::sum(Y.t()*Y)) = " << arma::sum(arma::sum(Y.t()*Y)) << endl;
-  //cout << "----> Stats:: p = " << p << endl;
-
-  //cout << "----> Stats:: arma::sum(arma::sum(arma::cov(Y))) = "
-  //	   << arma::sum(arma::sum(arma::cov(Y))) << endl;
-
-  //cout << "----> Stats:: rDiag = " << rdiag << endl;
-
-  Y.print("----> Stats:: Y = ");
-  arma::cov(Y).print("----> Stats:: cov(Y) = ");
-  arma::sum(Y, 0).t().print("-----> Stats:: sum(Y) = ");
 
   // <TODO> This as missing before, test now that it's here!
   r = rdiag + roff;
   
   double k = (p - r)/c;
   shrinkage = std::max(0.0, std::min(1.0, k/t));
+
+  // cout << "----> Stats: p = " << p << ", rDiag = " << rdiag
+  // 	   << ", c = " << c << ", k = " << k
+  // 	   << ", shrinkage = " << shrinkage << endl;
   
   return shrinkage*prior + (1-shrinkage)*sample;
   
