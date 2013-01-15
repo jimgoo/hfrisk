@@ -74,11 +74,12 @@ int main( int argc, char* argv[] ){
 
   //Cholesky(UPPER,S);
   //S.Print("Cholesky SigmA");
-  skewedtrnd(X,mu,gamma, S, df, nSims,comm);
+  //skewedtrnd(X, mu, gamma, S, df, nSims,comm);
   
-  Sigma.Empty();
-  SigmaT.Empty();
-  S.Empty();
+  // Sigma.Empty();
+  // SigmaT.Empty();
+  // S.Empty();
+  
   MPI_Barrier(comm);
   X.Print("Skewed MVT RND");
   

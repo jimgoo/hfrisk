@@ -1,0 +1,4 @@
+include /Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/conf/elemvariables
+
+mvtrnd_inline: mvtrnd_inline.cpp
+	${CXX} ${ELEM_COMPILE_FLAGS} -I/opt/local/include $< -o $@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS} ${BOOST}

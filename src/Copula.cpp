@@ -43,6 +43,8 @@ int i0;
 
 double gammaScale = 0.01;
 
+int depStruc = 1; // {1 = MSST, 2 = ASSG}
+int nSim = 10000; // number of MC samples
 
 struct RunTimes
 {
@@ -62,6 +64,20 @@ RunTimes rt;
 
 //-------------------------------------------------------------------------------
 
+static void printRT(RunTimes rt) {
+  
+  cout << "t_dep_est_mc  = " << rt.t_dep_est_mc  << endl
+	   << "t_dep_est_lut = " << rt.t_dep_est_lut << endl
+	   << "t_chol_mc     = " << rt.t_chol_mc     << endl
+	   << "t_chol_lut    = " << rt.t_chol_lut    << endl
+	   << "t_VaR_mc      = " << rt.t_VaR_mc      << endl
+	   << "t_VaR_lut     = " << rt.t_VaR_lut     << endl
+	   << "t_total_mc    = " << rt.t_total_mc    << endl
+	   << "t_total_lut   = " << rt.t_total_lut   << endl;
+}
+
+//-------------------------------------------------------------------------------
+
 int main(int argc, char* argv[]) {
   
   Initialize(argc, argv);
@@ -78,8 +94,6 @@ int main(int argc, char* argv[]) {
 
 	// rank 0 setup
 	if (commRank == 0) {
-	  
-	  rt.t_shrink = MPI::Wtime();
 
 	  // Test if d=100,000 will fit in memory:
 	  /*
@@ -108,15 +122,6 @@ int main(int argc, char* argv[]) {
 	  int iNonCoeffs = mygarch::iNonCoeffs;
 	  i0 = iNonCoeffs + iCoeffs + 3*maxRMPQ;
 		
-	  // mat mnGarchRes = zeros(iL, gCols);
-	  // mat mnGarchPars = zeros(i0, gCols);
-  
-	  // for (int i = 0; i < cols; i++) {
-	  // 	mnGarchRes.col(i) = mnGarch(span(i0, mnGarch.n_rows-4-1), i);
-	  // 	mnGarchPars.col(i) = mnGarch(span(0, i0-1), i);
-	  // }
-	  
-	  
 	} // commRank==0
 
 	MPI_Bcast(&i0, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -141,12 +146,11 @@ int main(int argc, char* argv[]) {
 
 	MPI_Bcast(vnGarch, vnGarchSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		
-	cout << "----> rank " << commRank
-		 << ", vnGarch[0] = " << vnGarch[0]
-		 << ", vnGarchSize = " << vnGarchSize
-		 << ", i0 = " << i0 << endl;
+	// cout << "----> rank " << commRank
+	// 	 << ", vnGarch[0] = " << vnGarch[0]
+	// 	 << ", vnGarchSize = " << vnGarchSize
+	// 	 << ", i0 = " << i0 << endl;
 
-  
 	Grid g(comm);
 	DistMatrix<R> X(iL, gCols, g);
 	DistMatrix<R> garchPars(i0, gCols, g);
@@ -162,7 +166,7 @@ int main(int argc, char* argv[]) {
 		garchPars.Set(i, j, vnGarch[i + j*gRows]);
 		
 	//X.Print("X = ");
-	garchPars.Print("garchPars = ");
+	//garchPars.Print("garchPars = ");
 
 	// set vectors gamma and mu
 	int idxGamma = gRows - 4;
@@ -177,13 +181,17 @@ int main(int argc, char* argv[]) {
 	  stGamma.Set(i, 0, gammaScale * vnGarch[idxGamma + i*gRows]);
 	  stMu.Set(i, 0, vnGarch[idxMu + i*gRows]);
 	}
-
 	
 	
 	//-------------------------------------------------------------------------------
 	// Shrinkage
 	//-------------------------------------------------------------------------------
 
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  rt.t_dep_est_mc = MPI::Wtime();
+	}
+	
 	// get column sums
 	DistMatrix<R> colSum(gCols, 1, g);
 	Zeros(gCols, 1, colSum);
@@ -328,7 +336,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	//-------------------------------------------------------------------------------
-
+	// Cholesky
 		
 	//Gemm(NORMAL, NORMAL, ((df - 2.0)/df), sample, eye, (2.0*df)/((df - 2.0)*(df - 4.0)),
 	double c1 = -2.0*df/((df - 2.0)*(df - 4.0));
@@ -349,12 +357,22 @@ int main(int argc, char* argv[]) {
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
 	  rt.t_chol_mc = MPI::Wtime() - rt.t_chol_mc;
+	  rt.t_dep_est_mc = MPI::Wtime() - rt.t_dep_est_mc;
 	}
 
-	
-	
-	
+	//-------------------------------------------------------------------------------
+	// Simulate random deviates
 
+	
+	//-------------------------------------------------------------------------------
+	//
+
+	if (commRank == 0) {
+	  
+	  printRT(rt);
+	  
+	}
+	
   } catch( ArgException& e ) {
     // do nothing
   } catch( exception& e ) {
@@ -371,20 +389,7 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 
-// struct RunTimes
-// {
-//   double t_dep_est_mc;  // time to estimate MC dependence structure
-//   double t_dep_est_lut; // time to estimate LUT dependence structure
-//   double t_shrink;      // time to shrink
-//   double t_chol_mc;     // time for MC cholesky
-//   double t_chol_lut;    // time for LUT cholesky
-//   double t_VaR_mc;      // time to estimate VaR with MC given all required parameters
-//   double t_VaR_lut;     // time to estimate VaR with LUT given all required parameters
-//   double t_total_mc;    // time for everything with MC
-//   double t_total_lut;   // time for everything with LUT
-// };
 
-// void printRT(RunTimes)
 
 /*
 
