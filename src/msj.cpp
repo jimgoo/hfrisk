@@ -303,7 +303,7 @@ int main(int argc, char **argv) {
 	cout << "Loading return data..." << endl;
 	
 	//mnRetAll.load(dataFile + "_logret.csv", csv_ascii);
-	mnRetAll.load(dataFile + "_logret.abin", arma_binary);
+	mnRetAll.load(dataFile + "/logret.abin", arma_binary);
 	vnDates.load(dataFile + "/dates.csv");
 	vnDates = vnDates(span(1,vnDates.n_rows-1));
 
@@ -894,7 +894,7 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
   mat mnGarchPars = zeros(i0, cols);
   
   for (int i = 0; i < cols; i++) {
-	mnGarchRes.col(i) = mnResults(span(i0, size_res-4-1), i);
+	mnGarchRes.col(i)  = mnResults(span(i0, size_res-4-1), i);
 	mnGarchPars.col(i) = mnResults(span(0, i0-1), i);
   }	
 
