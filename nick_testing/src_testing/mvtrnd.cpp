@@ -10,7 +10,7 @@
   * Set seeds for production code to be randomized
   * MASSIVE memory deallocation
 
-*/
+  */
 
 
 #include "elemental.hpp"
@@ -29,7 +29,7 @@ typedef float F;
 //function declarations
 void invgamma_matrix(DistMatrix<R> &W, DistMatrix<R> &sqrtW, const int df);
 void repmat(DistMatrix<R> &vector, DistMatrix<R> &repmatrix);
-void mvnrnd(DistMatrix<R> &Sigma,DistMatrix<R> &Z,const int nSims, mpi::Comm Comm);
+void mvnrnd(DistMatrix<R> &Sigma,DistMatrix<R> &Z,const int nSims,Grid** grid, mpi::Comm Comm);
 void dotproduct(DistMatrix<R> &A,DistMatrix<R> &B);
 void skewedtrnd(DistMatrix<R>& X,DistMatrix<R>& mu,DistMatrix<R>& gamma, DistMatrix<R>& Sigma,const int df, const int nSims,mpi::Comm Comm);
 void standard_normal_matrix(DistMatrix<R> &Normal);
@@ -38,6 +38,7 @@ void standard_normal_matrix(DistMatrix<R> &Normal);
 
 int nprocs;
 int commRank;
+int verbose= 1;
 
 int main( int argc, char* argv[] ){
   Initialize( argc, argv );
@@ -47,12 +48,13 @@ int main( int argc, char* argv[] ){
   nprocs = mpi::CommSize(comm );
 
   MPI_Bcast(&nprocs, 1, MPI_INT, 0, comm);
+  MPI_Bcast(&verbose,1 ,MPI_INT, 0, comm);
   //MPI::Comm::Bcast(nprocs , 1,mpi::int , 0);
   
   const int n = Input("--size","NxN size of Matricies",10);
   const int df = Input("--df","Degrees of freedom",5);
   const int nSims = Input("--nSims","Number of Monte Carlo Simulations",10);
-  const bool print = Input("--print","print matrices?",false);
+
   ProcessInput();
   PrintInputReport();
 
@@ -68,17 +70,19 @@ int main( int argc, char* argv[] ){
   Copy(Sigma,SigmaT);
   DistMatrix<R> S(n,n,grid);
   Gemm(NORMAL,TRANSPOSE, 1.0, Sigma, SigmaT, 0.0, S);
-  S.Print("Positive Definte Symmetric Sigma");
+  
   skewedtrnd(X,mu,gamma, S, df, nSims,comm);
   Sigma.Empty();
   SigmaT.Empty();
   S.Empty();
   MPI_Barrier(comm);
   X.Print("Skewed MVT RND");
+  
+  cout<<"Success!"<<endl;
 
-  //#ifndef RELEASE
-  //DumpCallStack();
-  //#endif
+#ifndef RELEASE
+  DumpCallStack();
+#endif
    
   Finalize();
   return 0;
@@ -86,53 +90,51 @@ int main( int argc, char* argv[] ){
 
 // X: mu + (gamma/beta * W) * (Z*sqrt(W))
 void skewedtrnd(DistMatrix<R>& X,DistMatrix<R>& mu,DistMatrix<R>& gamma, DistMatrix<R>& Sigma,const int df, const int nSims,mpi::Comm Comm){
-		/*
-		  
-		  nVariables = size(gamma, 2);
-		  Z = mvnrnd(zeros(1, nVariables),C,nSim);
-		  W = df ./ gamrnd(df./2, 2, nSim, nVariables);
-		  result = repmat(mu,nSim,1) + repmat(gamma,nSim,1) .* W  + sqrt(W) .* Z;
+  /*	  
+	  nVariables = size(gamma, 2);
+	  Z = mvnrnd(zeros(1, nVariables),C,nSim);
+	  W = df ./ gamrnd(df./2, 2, nSim, nVariables);
+	  result = repmat(mu,nSim,1) + repmat(gamma,nSim,1) .* W  + sqrt(W) .* Z;
+  */   
 
-        
-		*/   
+  Grid* grid;
+  Grid* GGrid = new Grid(Comm);
 
-  const Grid grid( Comm );
   const R alpha = 1;		
 
-		//nVariables = size(gamma, 2);
+  //nVariables = size(gamma, 2);
   const int nVariables = gamma.Width();
- 
-  //Generate W and Sqrt W from InvG ~ (df/2, df/2)
-  DistMatrix<R> W(nSims, nVariables,grid);
-  DistMatrix<R> sqrtW(nSims, nVariables,grid);
-  invgamma_matrix(W,sqrtW,df);
   
-  DistMatrix<R> Z(nSims,Sigma.Width(), grid);
-  mvnrnd(Sigma,Z,nSims,Comm);
-  DistMatrix<R> GAMMA(nSims,nVariables,grid);
-  DistMatrix<R> MU(nSims,nVariables,grid);
+  //Generate W and Sqrt W from InvG ~ (df/2, df/2)
+  DistMatrix<R> W(nSims, nVariables,*GGrid);
+  DistMatrix<R> sqrtW(nSims, nVariables,*GGrid);
+  invgamma_matrix(W,sqrtW,df);
+  DistMatrix<R> Z(nSims,Sigma.Width(), *GGrid);
+  mvnrnd(Sigma,Z,nSims,&grid,Comm);
+  DistMatrix<R> GAMMA(nSims,nVariables,*GGrid);
+  DistMatrix<R> MU(nSims,nVariables,*GGrid);
   repmat(gamma,GAMMA);	      
   repmat(mu,MU);
-  
-   //repmat(gamma,nSim,1) .* W
-   dotproduct(GAMMA,W);
-   //sqrt(W) .* Z;
-   dotproduct(sqrtW,Z);
-   //repmat(gamma,nSim,1) .*W
-   Axpy(alpha,W,Z);
-   //repmat(mu,nSim,1) + repmat(gamma,nSim,1) .* W  + sqrt(W) .* Z
-   Axpy(alpha,MU,Z);
+  //repmat(gamma,nSim,1) .* W
+  dotproduct(GAMMA,W);
+  //sqrt(W) .* Z;
+  dotproduct(sqrtW,Z);
+  //repmat(gamma,nSim,1) .*W
+  Axpy(alpha,W,Z);
+  MPI_Barrier(Comm);
+  //repmat(mu,nSim,1) + repmat(gamma,nSim,1) .* W  + sqrt(W) .* Z
+  Axpy(alpha,MU,Z);
+  MPI_Barrier(Comm);
+  //free matricies allocated   
+  GAMMA.Empty();
+  MU.Empty();
+  W.Empty();
+  sqrtW.Empty();
+  X = Z;
+  Z.Empty();
 
-   //free matricies allocated   
-   /*
-   GAMMA.Empty();
-   MU.Empty();
-   W.Empty();
-   sqrtW.Empty();
-   */  
-   Copy(Z,X);
-
-   //Z.Empty();
+  delete grid;
+  delete GGrid;
 }
 
 //function to generate W and Sqrt W for skewed t mvt rnd
@@ -148,18 +150,18 @@ void invgamma_matrix(DistMatrix<R> &W, DistMatrix<R> &sqrtW, const int df){
   const int rowStride = W.RowStride();
   const int localHeight = W.LocalHeight();
   const int localWidth = W.LocalWidth();
-      for( int iLocal=0; iLocal<localHeight; ++iLocal ){
-	 for( int jLocal=0; jLocal<localWidth; ++jLocal ){
-	   //const int i = colShift + iLocal*colStride;
-	   //const int j = rowShift + jLocal*rowStride;
-	  temp = (double)df/dist(rng);
-	  W.SetLocal( iLocal, jLocal, temp  );
-	  sqrtW.SetLocal( iLocal, jLocal, sqrt(temp));
-      }
+  for( int iLocal=0; iLocal<localHeight; ++iLocal ){
+    for( int jLocal=0; jLocal<localWidth; ++jLocal ){
+      //const int i = colShift + iLocal*colStride;
+      //const int j = rowShift + jLocal*rowStride;
+      temp = (double)df/dist(rng);
+      W.SetLocal( iLocal, jLocal, temp  );
+      sqrtW.SetLocal( iLocal, jLocal, sqrt(temp));
+    }
   }
 }
 
-  //generate N~(0,1) matrix/vector
+//generate N~(0,1) matrix/vector
 void standard_normal_matrix(DistMatrix<R> &Normal){
   boost::random::normal_distribution<> dist(0.0,1.0);  
   boost::random::mt19937 rng(static_cast<boost::uint32_t>(commRank));
@@ -170,13 +172,13 @@ void standard_normal_matrix(DistMatrix<R> &Normal){
   const int rowStride = Normal.RowStride();
   const int localHeight = Normal.LocalHeight();
   const int localWidth = Normal.LocalWidth();
-      for( int iLocal=0; iLocal<localHeight; ++iLocal ){
-	 for( int jLocal=0; jLocal<localWidth; ++jLocal ){
-	   //const int i = colShift + iLocal*colStride;
-	   //const int j = rowShift + jLocal*rowStride;
-	  temp = dist(rng);
-	  Normal.SetLocal( iLocal, jLocal, temp);
-      }
+  for( int iLocal=0; iLocal<localHeight; ++iLocal ){
+    for( int jLocal=0; jLocal<localWidth; ++jLocal ){
+      //const int i = colShift + iLocal*colStride;
+      //const int j = rowShift + jLocal*rowStride;
+      temp = dist(rng);
+      Normal.SetLocal( iLocal, jLocal, temp);
+    }
   }
 }
 
@@ -195,16 +197,15 @@ void dotproduct(DistMatrix<R> &A,DistMatrix<R> &B){
   const int rowStride = A.RowStride();
   const int localHeight = A.LocalHeight();
   const int localWidth = A.LocalWidth();
-    for( int iLocal=0; iLocal<localHeight; ++iLocal ){
-      for( int jLocal=0; jLocal<localWidth; ++jLocal ){
-		  const int i = colShift + iLocal*colStride;
-		  const int j = rowShift + jLocal*rowStride;
-      temp = A.GetLocal(i, j);
-      temp1 = B.GetLocal(i,j);
-      B.SetLocal(i, j, (temp*temp1));
-
-      }
+  for( int iLocal=0; iLocal<localHeight; ++iLocal ){
+    for( int jLocal=0; jLocal<localWidth; ++jLocal ){
+      const int i = colShift + iLocal*colStride;
+      const int j = rowShift + jLocal*rowStride;
+      temp = A.GetLocal(iLocal, jLocal);
+      temp1 = B.GetLocal(iLocal,jLocal);
+      B.SetLocal(iLocal, jLocal, (temp*temp1));
     }
+  }
 }
 
 void repmat(DistMatrix<R> &vector, DistMatrix<R> &repmatrix){
@@ -218,27 +219,25 @@ void repmat(DistMatrix<R> &vector, DistMatrix<R> &repmatrix){
   const int rowStride = repmatrix.RowStride();
   const int localHeight = repmatrix.LocalHeight();
   const int localWidth = repmatrix.LocalWidth();
-    for( int iLocal=0; iLocal<localHeight; ++iLocal ){
-      for( int jLocal=0; jLocal<localWidth; ++jLocal ){
-		  const int i = colShift + iLocal*colStride;
-		  const int j = rowShift + jLocal*rowStride;
-      temp = vector.GetLocal(0, j);
-      repmatrix.SetLocal(i, j, temp);
+  for( int iLocal=0; iLocal<localHeight; ++iLocal ){
+    for( int jLocal=0; jLocal<localWidth; ++jLocal ){
+      const int i = colShift + iLocal*colStride;
+      const int j = rowShift + jLocal*rowStride;
+      temp = vector.GetLocal(0, iLocal);
+      repmatrix.SetLocal(iLocal, jLocal, temp);
     }
   }
 }
 
-void mvnrnd(DistMatrix<R> &Sigma,DistMatrix<R> &Z, const int nSims, mpi::Comm Comm){
+void mvnrnd(DistMatrix<R> &Sigma,DistMatrix<R> &Z, const int nSims,Grid** grid, mpi::Comm Comm){
   // WARNING if Cholesky is NOT postive definite the code segfaults!
-  
-  // const Orientation orientation = NORMAL;
   const R alpha = 1;
   const R beta = 0;
-  Grid grid(Comm);
-  DistMatrix<R> N(nSims,Sigma.Width(), grid);
+  //Grid grid(Comm);
+  *grid = new Grid(Comm);
+  DistMatrix<R> N(nSims,Sigma.Width(), **grid);
   standard_normal_matrix(N);
   Cholesky(UPPER,Sigma);
   Gemm(NORMAL,NORMAL, alpha, Sigma, N, beta, Z);
-
-  //N.Empty();
+  N.Empty();
 }

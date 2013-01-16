@@ -29,9 +29,10 @@ typedef float F;
 //function declarations
 void invgamma_matrix(DistMatrix<R> &W, DistMatrix<R> &sqrtW, const int df);
 void repmat(DistMatrix<R> &vector, DistMatrix<R> &repmatrix);
-void mvnrnd(DistMatrix<R> &Sigma,DistMatrix<R> &Z,const int nSims, mpi::Comm Comm);
+
 void dotproduct(DistMatrix<R> &A,DistMatrix<R> &B);
 void skewedtrnd(DistMatrix<R>& X,DistMatrix<R>& mu,DistMatrix<R>& gamma, DistMatrix<R>& Sigma,const int df, const int nSims,mpi::Comm Comm);
+void mvnrnd(DistMatrix<R> &Sigma,DistMatrix<R> &Z,const int nSims,Grid **grid, mpi::Comm Comm);
 void standard_normal_matrix(DistMatrix<R> &Normal);
 
 
@@ -74,12 +75,11 @@ int main( int argc, char* argv[] ){
 
   //Cholesky(UPPER,S);
   //S.Print("Cholesky SigmA");
-  //skewedtrnd(X, mu, gamma, S, df, nSims,comm);
+  skewedtrnd(X,mu,gamma, S, df, nSims,comm);
   
-  // Sigma.Empty();
-  // SigmaT.Empty();
-  // S.Empty();
-  
+  Sigma.Empty();
+  SigmaT.Empty();
+  S.Empty();
   MPI_Barrier(comm);
   X.Print("Skewed MVT RND");
   
@@ -103,7 +103,7 @@ void skewedtrnd(DistMatrix<R>& X,DistMatrix<R>& mu,DistMatrix<R>& gamma, DistMat
         
   */   
 
-  const Grid grid( Comm );
+  Grid* grid;
   const R alpha = 1;
   const R beta = 0;
 
@@ -135,8 +135,10 @@ void skewedtrnd(DistMatrix<R>& X,DistMatrix<R>& mu,DistMatrix<R>& gamma, DistMat
   dotproduct(sqrtW,Z);
   //repmat(gamma,nSim,1) .*W
   Axpy(alpha,W,Z);
+   MPI_Barrier(Comm);
   //repmat(mu,nSim,1) + repmat(gamma,nSim,1) .* W  + sqrt(W) .* Z
   Axpy(alpha,MU,Z);
+   MPI_Barrier(Comm);
 
   //free matricies allocated   
    
@@ -147,8 +149,9 @@ void skewedtrnd(DistMatrix<R>& X,DistMatrix<R>& mu,DistMatrix<R>& gamma, DistMat
    
   //Copy(Z,X);
   X = Z;
-
+   MPI_Barrier(Comm);
   Z.Empty();
+  delete  &grid;
 }
 
 //function to generate W and Sqrt W for skewed t mvt rnd
