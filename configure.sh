@@ -11,7 +11,8 @@ LIBDIR="/nfs/user01/jimmie21/github/hfrisk/lib"
 
 wget http://sourceforge.net/projects/arma/files/armadillo-3.6.1.tar.gz
 wget http://ab-initio.mit.edu/nlopt/nlopt-2.3.tar.gz
-wget http://sourceforge.net/projects/boost/files/boost/1.51.0/boost_1_51_0.tar.gz/download
+#wget http://sourceforge.net/projects/boost/files/boost/1.51.0/boost_1_51_0.tar.gz/download
+wget http://downloads.sourceforge.net/project/boost/boost/1.52.0/boost_1_52_0.tar.gz?r=&ts=1358207263&use_mirror=voxel
 wget ftp://ftp.gnu.org/gnu/gsl/gsl-1.15.tar.gz
 wget http://www.cmake.org/files/v2.8/cmake-2.8.9.tar.gz
 wget ftp://ftp.gnu.org/gnu/gcc/gcc-4.7.2/gcc-4.7.2.tar.gz
@@ -19,7 +20,7 @@ wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.9.tar.gz
 wget http://www.fftw.org/fftw-3.3.2.tar.gz
 
 tar -xzf armadillo-3.6.1.tar.gz 
-tar -xzf boost_1_51_0.tar.gz 
+tar -xzf boost_1_5_2.tar.gz 
 tar -xzf gsl-1.15.tar.gz 
 tar -xzf nlopt-2.3.tar.gz
 tar -xzf cmake-2.8.9.tar.gz
@@ -28,20 +29,10 @@ tar -xzf hdf5-1.8.9.tar.gz
 tar -zxf fftw-3.3.2.tar.gz
 
 #--------------------------------------------------------------
-# GCC
-
-# cd gcc-4.7.2/
-
-# # get the old configure options
-# gcc -v
-
-# /gpfs/home3/j/jgoode/lib/gcc-4.7.2/configure --enable-threads=posix --prefix=/usr --with-local-prefix=/usr/local --infodir=/usr/share/info --mandir=/usr/share/man --enable-languages=c,c++,f77,objc,java,ada --disable-checking --libdir=/usr/lib --enable-libgcj --with-gxx-include-dir=/usr/include/g++ --with-slibdir=/lib --with-system-zlib --enable-shared --enable-__cxa_atexit --host=powerpc-suse-linux --build=powerpc-suse-linux --target=powerpc-suse-linux --enable-targets=powerpc64-suse-linux --enable-biarch
-
-
-#--------------------------------------------------------------
 # GSL
 
 cd gsl-1.15/
+mkdir install
 mkdir install/gsl
 ./configure --prefix=${LIBDIR}/gsl-1.15/install/gsl
 make
@@ -72,10 +63,10 @@ export PATH=${LIBDIR}/cmake-2.8.9/install/bin:$PATH
 # Boost (<TODO> Armadillo's config.hpp has a flag to use Boost)
 
 cd ../
-cd boost_1_51_0/
+cd boost_1_52_0/
 mkdir install
 ./bootstrap.sh
-./b2 --prefix=${LIBDIR}/boost_1_51_0/install
+./b2 --prefix=${LIBDIR}/boost_1_52_0/install
 
 
 #--------------------------------------------------------------
@@ -94,9 +85,13 @@ make install
 # HDF5 is used by Armadillo
 
 cd ../
-cd hdf5-1.8.9/
-./configure --prefix=${LIBDIR}/hdf5-1.8.9/install --enable-fortran --enable-cxx
-
+wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.10.tar.gz
+tar -xzf hdf5-1.8.10.tar.gz
+cd hdf5-1.8.10/
+mkdir install
+./configure --prefix=${LIBDIR}/hdf5-1.8.10/install --enable-fortran --enable-cxx
+make
+make install
 
 #--------------------------------------------------------------
 # Armadillo (one needy bitch, got to do it by hand)
@@ -104,8 +99,8 @@ cd hdf5-1.8.9/
 cd ../
 cd armadillo-3.6.1/
 mkdir install
-#cmake -DCMAKE_INSTALL_PREFIX:PATH=${LIBDIR}/armadillo-3.6.1/install .
-cmake . 
+cmake -DCMAKE_INSTALL_PREFIX=${LIBDIR}/armadillo-3.6.1/install .
+#cmake . 
 make
 make install DESTDIR=${LIBDIR}/armadillo-3.6.1/install
 
@@ -138,13 +133,24 @@ make install DESTDIR=${LIBDIR}/armadillo-3.6.1/install
 # Elemental - new version of CMake is required
 
 # Galaxy
-/nfs/user03/copula/20120323/lib/cmake-2.8.9/install/bin/cmake -D CMAKE_INSTALL_PREFIX=????  ..
+#/nfs/user03/copula/20120323/lib/cmake-2.8.9/install/bin/cmake -D CMAKE_INSTALL_PREFIX=????  ..
 
-# MAC
-cmake -D CMAKE_INSTALL_PREFIX=/Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/ \
-           -D CMAKE_CXX_COMPILER=/usr/bin/g++ \
-           -D CMAKE_C_COMPILER=/usr/bin/gcc   \
-           -D CMAKE_Fortran_COMPILER=/opt/local/bin/gfortran \
-           -D MATH_LIBS="-D__ACCELERATE_ -framework Accelerate" ..
+# Vogon
+cd ../
+wget http://elemental.googlecode.com/files/elemental-0.77.tgz
+tar -xzf elemental-0.77.tgz
+cd elemental-0.77
+mkdir install
+cd install
+cmake -D CMAKE_INSTALL_PREFIX=${LIBDIR}/elemental-0.77/install ..
 make
 make install
+
+# MAC
+#cmake -D CMAKE_INSTALL_PREFIX=/Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/ \
+#           -D CMAKE_CXX_COMPILER=/usr/bin/g++ \
+#           -D CMAKE_C_COMPILER=/usr/bin/gcc   \
+#           -D CMAKE_Fortran_COMPILER=/opt/local/bin/gfortran \
+#           -D MATH_LIBS="-D__ACCELERATE_ -framework Accelerate" ..
+#make
+#make install

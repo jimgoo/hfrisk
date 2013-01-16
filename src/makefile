@@ -23,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = GALAXY
+TARGET = VOGON
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -84,6 +84,29 @@ AD_L = -L/gpfs/home3/j/jgoode/examples/lapack/lapack-3.3.0
 #AD_FLAG  = -framework Accelerate #-larmadillo  #-llapack -lblas -lgfortran
 endif
 
+
+ifeq ($(TARGET), VOGON)
+
+LIBDIR=/nfs/user01/jimmie21/github/hfrisk/lib
+ïï
+CCMPI = mpic++  -fopenmp
+BOOST = -I /nfs/user03/copula/20120323/lib/boost_1_49_0
+GSL   = -I /nfs/user03/copula/20120323/lib/gsl-1.15/INSTALL_DIR/gsl/include/gsl
+MPI   = -I /usr/local/pkg/openmpi/include
+NLOPT = -I/nfs/user03/copula/20120323/lib/nlopt-2.2.4/build/include -L/nfs/user03/copula/20120323/lib/nlopt-2.2.4/build/lib
+
+# Use OpenBLAS for threading and regular built in LAPACK (/usr/lib/liblapack.so)                                                                                         
+AD_I  = -I/nfs/user03/copula/20120323/lib/armadillo-3.6.1/include -I/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/include
+AD_L  = -L/nfs/user03/copula/20120323/lib/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/lib -lopenblas /usr/lib/liblapack.so -lgfortran
+FFTW_I = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/include
+FFTW_L = -I/nfs/user03/copula/20120323/lib/fftw-3.3.2/installdir/lib
+HDF_I = -I/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/include
+HDF_L = -L/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/lib -lhdf5
+
+include /nfs/user03/copula/20120323/lib/elemental-0.77/build/conf/elemvariables
+
+
+endif
 
 #export OMP_NUM_THREADS=2
 #echo "OMP_NUM_THREADS = $OMP_NUM_THREADS"
