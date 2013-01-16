@@ -3,12 +3,12 @@
 ##  Created: 2012-09-01
 #-------------------------------------------------------------------------------
 
-#OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
+OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.o msj.o mystable.o myskewt_lut.o
 #OBJS = Stats.o mystable.o myassg.o #Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o
 #OBJS = Constants.o Stats.o myskewt.o skeweduvstudenttpdf.o IO.o gamma.o myskewt_lut.o
 #OBJS     = mygarch_par.o #MasterSlave.o
 #OBJS     = Backtest.o MasterSlave.o mygarch_par.o IO.o
-OBJS     = Copula.o Stats.o
+#OBJS     = Copula.o Stats.o
 EXE      = ../bin/HFRisk
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
