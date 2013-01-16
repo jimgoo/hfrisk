@@ -307,8 +307,10 @@ int main(int argc, char **argv) {
 	//mnRetAll.load(dataFile + "_logret.csv", csv_ascii);
 	mnRetAll.load(dataFile + "/logret.abin", arma_binary);
 
-	if (goBig) {
+	// replicate data for larger dimension testing
+	if (goBig > mnRetAll.n_cols) {
 	  mnRetAll = repmat(mnRetAll, 1, (int) ceil(goBig/mnRetAll.n_cols));
+	  mnRetAll = mnRetAll(span::all, span(0, goBig-1));
 	}
 	
 	vnDates.load(dataFile + "/dates.csv");
