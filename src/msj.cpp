@@ -107,6 +107,8 @@ vec wts;
 int doLUT = 1;
 int numCores;
 
+int goBig = 0;
+
 //-------------------------------------------------------------------------------
 
 // // sizes of each group
@@ -260,8 +262,8 @@ int main(int argc, char **argv) {
 		  lut_path = boost::lexical_cast<string>(argv[i+1]);
 		} else if (strncmp(argv[i],"-doLUT",7) == 0) {
 		  doLUT = boost::lexical_cast<int>(argv[i+1]);
-		} else if (strncmp(argv[i],"-iS",4) == 0) {
-		  //iS = boost::lexical_cast<int>(argv[i+1]);
+		} else if (strncmp(argv[i],"-goBig",10) == 0) {
+		  goBig = boost::lexical_cast<int>(argv[i+1]);
 		}
 	  }
 	}
@@ -304,6 +306,11 @@ int main(int argc, char **argv) {
 	
 	//mnRetAll.load(dataFile + "_logret.csv", csv_ascii);
 	mnRetAll.load(dataFile + "/logret.abin", arma_binary);
+
+	if (goBig) {
+	  mnRetAll = repmat(mnRetAll, 1, (int) ceil(goBig/mnRetAll.n_cols));
+	}
+	
 	vnDates.load(dataFile + "/dates.csv");
 	vnDates = vnDates(span(1,vnDates.n_rows-1));
 

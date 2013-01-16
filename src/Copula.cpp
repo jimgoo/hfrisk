@@ -392,11 +392,25 @@ int main(int argc, char* argv[]) {
 
 
 /*
-
-For 1000 X 5109:
   
-Jimmies-MacBook-Pro:src jimmiegoode$ mpirun -np 2 ../bin/HFRisk
-----> t_shrink elem = 188.154
-----> t_shrink serial = 14.389
+Jimmies-MacBook-Pro:src jimmiegoode$ mpirun -np 1 ../bin/HFRisk -garchFile /Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/20080102.h5 
+t_dep_est_mc  = 140.428
+t_dep_est_lut = 0
+t_chol_mc     = 9.65242
+t_chol_lut    = 0
+t_VaR_mc      = 0
+t_VaR_lut     = 0
+t_total_mc    = 0
+t_total_lut   = 0
+
+Jimmies-MacBook-Pro:src jimmiegoode$ mpirun -np 2 ../bin/HFRisk -garchFile /Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/20080102.h5 
+t_dep_est_mc  = 244.037
+t_dep_est_lut = 0
+t_chol_mc     = 7.47791
+t_chol_lut    = 0
+t_VaR_mc      = 0
+t_VaR_lut     = 0
+t_total_mc    = 0
+t_total_lut   = 0
 
 */
