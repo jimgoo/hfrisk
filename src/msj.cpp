@@ -283,7 +283,7 @@ int main(int argc, char **argv) {
 	   << "\ndoChkEigs = "  << doCheckEigs << "\nbeginDate = "     << (int)beginDate
 	   << "\nendDate = "    << (int)endDate<< "\ngammaScale = "    << gammaScale
 	   << "\nlut_path = "   << lut_path    << "\ndoLUT = "         << doLUT
-	   << "\nnumCores = "   << numCores
+	   << "\nnumCores = "   << numCores    << "\ngoBig = "         << goBig
 	   << endl
 	   << LINE;
 	
@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
 
 	// import all returns
 	cout << LINE;
-	cout << "Loading return data..." << endl;
+	cout << "----> Loading return data..." << endl;
 	
 	//mnRetAll.load(dataFile + "_logret.csv", csv_ascii);
 	//mnRetAll.load(dataFile + "/logret.abin", arma_binary);
@@ -310,7 +310,9 @@ int main(int argc, char **argv) {
 
 	// replicate data for larger dimension testing
 	if (goBig > mnRetAll.n_cols) {
-	  mnRetAll = repmat(mnRetAll, 1, (int) ceil(goBig/mnRetAll.n_cols));
+	  int iReps = (int) goBig/mnRetAll.n_cols;
+	  cout << "----> iReps = " << iReps << endl;
+	  mnRetAll = repmat(mnRetAll, 1, iReps + 1);
 	  mnRetAll = mnRetAll(span::all, span(0, goBig-1));
 	}
 	
@@ -320,7 +322,7 @@ int main(int argc, char **argv) {
 	uvec idx0 = find(vnDates >= beginDate, 1, "first");
 	uvec idx1 = find(vnDates <= endDate, 1, "last");
 
-	cout << "border dates: " << (int)vnDates(idx0(0)) << ", " << (int)vnDates(idx1(0)) << endl;
+	cout << "----> Border dates: " << (int)vnDates(idx0(0)) << ", " << (int)vnDates(idx1(0)) << endl;
 
 	// get column indices
 	int iTkr;

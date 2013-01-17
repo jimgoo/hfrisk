@@ -121,6 +121,11 @@ all: main
 main: $(OBJS)
 	$(CCMPI) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
+
+dep: Copula.o Stats.o
+	$(CCMPI) $(LFLAGS) -o ../bin/DepStruct Copula.o Stats.o $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+
+
 Constants.o: Constants.h Constants.cpp
 	$(CCMPI) $(CFLAGS) Constants.cpp
 

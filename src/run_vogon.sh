@@ -6,13 +6,13 @@ CG_EXP="${CG_DATA}/exports"
 
 mkdir ${CG_EXP}
 
-mpirun -np 2 ../bin/HFRisk \
+mpirun -np 24 ../bin/HFRisk \
 	-x OMP_NUM_THREADS \
 	-df "${CG_DATA}/csi_20030101_20120801_v3" \
-	-rf "${CG_EXP}/nill" \
+	-rf "${CG_EXP}/ST_100000" \
 	-mc -1 \
 	-nSims 10000 \
-	-v 1 \
+	-v 0 \
 	-margOnly 0 \
 	-innovType 2 \
 	-depStruct 1 \
@@ -20,9 +20,9 @@ mpirun -np 2 ../bin/HFRisk \
 	-beginDate 20080102 \
 	-endDate 20080105 \
 	-lut_path "${CG_LUT}/test2" \
-	-doLUT 1 \
+	-doLUT 0 \
 	-margOnly 1 \
-	-goBig 0
+	-goBig 100000
 
 # mpirun -np 4 ../lib/tester \
 # 	-x OMP_NUM_THREADS \

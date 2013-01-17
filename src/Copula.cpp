@@ -16,8 +16,8 @@
 #include "mygarch.hpp"
 #include "myskewt.hpp"
 #include "Constants.h"
-#include "mystable.hpp"
-#include "myskewt_lut.hpp"
+//#include "mystable.hpp"
+//#include "myskewt_lut.hpp"
 
 using namespace arma;
 using namespace elem;
@@ -59,13 +59,15 @@ struct RunTimes
 };
 
 RunTimes rt;
-
+string outputFile = ".";
 
 //-------------------------------------------------------------------------------
 
-static void printRT(RunTimes rt) {
+static void printRT(RunTimes rt, string fname) {
+
+  std::ostringstream ss;
   
-  cout << "t_dep_est_mc  = " << rt.t_dep_est_mc  << endl
+  ss   << "t_dep_est_mc  = " << rt.t_dep_est_mc  << endl
 	   << "t_dep_est_lut = " << rt.t_dep_est_lut << endl
 	   << "t_chol_mc     = " << rt.t_chol_mc     << endl
 	   << "t_chol_lut    = " << rt.t_chol_lut    << endl
@@ -73,6 +75,13 @@ static void printRT(RunTimes rt) {
 	   << "t_VaR_lut     = " << rt.t_VaR_lut     << endl
 	   << "t_total_mc    = " << rt.t_total_mc    << endl
 	   << "t_total_lut   = " << rt.t_total_lut   << endl;
+
+  cout << ss.str();
+
+  FILE* f;
+  f = fopen((fname + "/runTimes.txt").c_str(), "w+");
+  fprintf(f, "%s\n", (ss.str()).c_str());
+  fclose(f);
 }
 
 //-------------------------------------------------------------------------------
@@ -87,20 +96,23 @@ int main(int argc, char* argv[]) {
   try {
 	
 	// parse args
-	for (int i = 1; i < argc-1; i++)
+	for (int i = 1; i < argc-1; i++) {
 	  if (strncmp(argv[i],"-garchFile",20) == 0)
 		garchFile = boost::lexical_cast<string>(argv[i+1]);
+	  if (strncmp(argv[i],"-outputFile",20) == 0)
+		outputFile = boost::lexical_cast<string>(argv[i+1]);
+	}
 
 	// rank 0 setup
 	if (commRank == 0) {
 
 	  // Test if d=100,000 will fit in memory:
 	  /*
-	  mnGarch.load(garchFile, arma_binary);
-	  cout << "size(mnGarch_0) = " << mnGarch.n_rows << " X " << mnGarch.n_cols << endl;
-	  mnGarch = repmat(mnGarch, 1, 19);
-	  cout << "size(mnGarch_1) = " << mnGarch.n_rows << " X " << mnGarch.n_cols << endl;
-	  sleep(1000);
+		mnGarch.load(garchFile, arma_binary);
+		cout << "size(mnGarch_0) = " << mnGarch.n_rows << " X " << mnGarch.n_cols << endl;
+		mnGarch = repmat(mnGarch, 1, 19);
+		cout << "size(mnGarch_1) = " << mnGarch.n_rows << " X " << mnGarch.n_cols << endl;
+		sleep(1000);
 	  */
 
 	  mnGarch.load(garchFile, hdf5_binary);
@@ -190,6 +202,7 @@ int main(int argc, char* argv[]) {
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
 	  rt.t_dep_est_mc = MPI::Wtime();
+	  cout << "-----> Beginning shrinkage\n";
 	}
 	
 	// get column sums
@@ -333,6 +346,8 @@ int main(int argc, char* argv[]) {
 	  // t_shrink = MPI::Wtime() - t_shrink;
 	  // cout << "----> t_shrink serial = " << t_shrink << endl;
 	  //aS.print("armaFinal = ");
+
+	  cout << "----> Shrinkage done, starting dependency estimation.\n";
 	}
 
 	//-------------------------------------------------------------------------------
@@ -343,11 +358,11 @@ int main(int argc, char* argv[]) {
 	double c2 = ((df - 2.0)/df);
 	Gemm(NORMAL, TRANSPOSE, c1, stGamma, stGamma, c2, sample);
 
-
 	// start chol time
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
 	  rt.t_chol_mc = MPI::Wtime();
+	  cout << "----> Dependency estimation done, starting cholesky.\n";
 	}
 	
 	// Cholesky
@@ -358,6 +373,7 @@ int main(int argc, char* argv[]) {
 	if (commRank == 0) {
 	  rt.t_chol_mc = MPI::Wtime() - rt.t_chol_mc;
 	  rt.t_dep_est_mc = MPI::Wtime() - rt.t_dep_est_mc;
+	  cout << "----> Cholesky estimation done.\n";
 	}
 
 	//-------------------------------------------------------------------------------
@@ -368,19 +384,17 @@ int main(int argc, char* argv[]) {
 	//
 
 	if (commRank == 0) {
-	  
-	  printRT(rt);
-	  
+	  printRT(rt, outputFile);
 	}
 	
   } catch( ArgException& e ) {
     // do nothing
   } catch( exception& e ) {
-	  ostringstream os;
-	  os << "Process " << commRank << " caught exception: " << e.what() << endl;
-	  cerr << os.str();
+	ostringstream os;
+	os << "Process " << commRank << " caught exception: " << e.what() << endl;
+	cerr << os.str();
 #ifndef RELEASE
-	  DumpCallStack();
+	DumpCallStack();
 #endif
   }
 
