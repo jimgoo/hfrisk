@@ -23,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = VOGON
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -182,6 +182,9 @@ Backtest.o: Backtest.hpp Backtest.cpp
 
 Copula.o: Copula.cpp Stats.o
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) ${ELEM_COMPILE_FLAGS} Copula.cpp
+
+Cholesky: Cholesky.cpp
+	${CXX} ${ELEM_COMPILE_FLAGS} $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
 clean:
 	rm -rf *.o *.out $(EXE)
