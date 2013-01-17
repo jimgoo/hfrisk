@@ -183,8 +183,18 @@ Backtest.o: Backtest.hpp Backtest.cpp
 Copula.o: Copula.cpp Stats.o
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) ${ELEM_COMPILE_FLAGS} Copula.cpp
 
+
+
 Cholesky: Cholesky.cpp
 	${CXX} ${ELEM_COMPILE_FLAGS} $(HDF_I) $(HDF_L) $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+<<<<<<< HEAD
+
+VaR_MC: VaR_MC.cpp
+	${CXX} ${ELEM_COMPILE_FLAGS} $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+=======
+>>>>>>> 0df7cfea632cb8b64259c0fbadf2b8e7a7cd43c5
+
+
 
 clean:
 	rm -rf *.o *.out $(EXE)
