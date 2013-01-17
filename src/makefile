@@ -23,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = MAC
+TARGET = VOGON
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -85,7 +85,9 @@ ifeq ($(TARGET), VOGON)
 
 LIBDIR=/nfs/user01/jimmie21/github/hfrisk/lib
 
-#export LD_LIBRARY_PATH=/nfs/user01/jimmie21/github/hfrisk/lib/armadillo-3.6.1/install/usr/lib64:$LD_LIBRARY_PATH
+# ALL libs must be added to the LD_LIBRARY_PATH for Vogon
+
+#export LD_LIBRARY_PATH=${LIBDIR}/gsl-1.15/install/gsl/lib:${LIBDIR}/nlopt-2.3/install/lib:${LIBDIR}/armadillo-3.6.1/install/usr/lib64:${LIBDIR}/fftw-3.3.2/installdir/lib:${LIBDIR}/hdf5-1.8.10/install/lib
 
 CCMPI  = mpic++
 BOOST  = -I${LIBDIR}/boost_1_52_0
@@ -93,8 +95,8 @@ GSL    = -I${LIBDIR}/gsl-1.15/install/gsl/include -L${LIBDIR}/gsl-1.15/install/g
 MPI    = -I/usr/local/pkg/openmpi/include
 NLOPT  = -I${LIBDIR}/nlopt-2.3/install/include -L${LIBDIR}/nlopt-2.3/install/lib
 
-AD_I   = -I/nfs/user01/jimmie21/github/hfrisk/lib/armadillo-3.6.1/install/usr/include
-AD_L   = -L/nfs/user01/jimmie21/github/hfrisk/lib/armadillo-3.6.1/install/usr/lib64 -larmadillo
+AD_I   = -I${LIBDIR}/armadillo-3.6.1/install/usr/include
+AD_L   = -L${LIBDIR}/armadillo-3.6.1/install/usr/lib64 -larmadillo
 
 FFTW_I = -I${LIBDIR}/fftw-3.3.2/installdir/include
 FFTW_L = -L${LIBDIR}/fftw-3.3.2/installdir/lib

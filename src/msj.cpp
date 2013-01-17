@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
 
 	  cout << "Elapsed time for table generation: " << MPI::Wtime()-t_lut << endl;
 
-	  lut.save("../LUTs/test2", lut_type, lut_ext);
+	  lut.save("../../../LUTs/test2", lut_type, lut_ext);
 	  
 	  MPI_Finalize();
 	  return 0;
@@ -305,7 +305,8 @@ int main(int argc, char **argv) {
 	cout << "Loading return data..." << endl;
 	
 	//mnRetAll.load(dataFile + "_logret.csv", csv_ascii);
-	mnRetAll.load(dataFile + "/logret.abin", arma_binary);
+	//mnRetAll.load(dataFile + "/logret.abin", arma_binary);
+	mnRetAll.load(dataFile + "/logret.h5", hdf5_binary);
 
 	// replicate data for larger dimension testing
 	if (goBig > mnRetAll.n_cols) {
