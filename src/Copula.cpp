@@ -366,7 +366,7 @@ int main(int argc, char* argv[]) {
 	}
 	
 	// Cholesky
-	Cholesky(LOWER, sample);
+	//Cholesky(LOWER, sample);
 
 	// stop chol time
 	MPI_Barrier(MPI_COMM_WORLD);
