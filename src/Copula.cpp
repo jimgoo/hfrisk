@@ -381,14 +381,11 @@ int main(int argc, char* argv[]) {
 	}
 	
 	// Cholesky
-<<<<<<< HEAD
 	Cholesky(LOWER, sample);
 	*/
-	
-=======
+   
 	//Cholesky(LOWER, sample);
 
->>>>>>> 72924efd1c0c60d4ebb217ba8e29bf404e0b8b19
 	// stop chol time
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
