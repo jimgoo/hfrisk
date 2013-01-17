@@ -1,0 +1,10 @@
+t_dep_est_mc  = 136.328
+t_dep_est_lut = 0
+t_shirnk      = 1.35846e+09
+t_chol_mc     = 0
+t_chol_lut    = 0
+t_VaR_mc      = 0
+t_VaR_lut     = 0
+t_total_mc    = 0
+t_total_lut   = 0
+

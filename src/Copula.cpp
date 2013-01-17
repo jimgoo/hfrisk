@@ -60,6 +60,7 @@ struct RunTimes
 
 RunTimes rt;
 string outputFile = ".";
+int goBig = 0;
 
 //-------------------------------------------------------------------------------
 
@@ -69,6 +70,7 @@ static void printRT(RunTimes rt, string fname) {
   
   ss   << "t_dep_est_mc  = " << rt.t_dep_est_mc  << endl
 	   << "t_dep_est_lut = " << rt.t_dep_est_lut << endl
+	   << "t_shirnk      = " << rt.t_shrink      << endl
 	   << "t_chol_mc     = " << rt.t_chol_mc     << endl
 	   << "t_chol_lut    = " << rt.t_chol_lut    << endl
 	   << "t_VaR_mc      = " << rt.t_VaR_mc      << endl
@@ -101,6 +103,8 @@ int main(int argc, char* argv[]) {
 		garchFile = boost::lexical_cast<string>(argv[i+1]);
 	  if (strncmp(argv[i],"-outputFile",20) == 0)
 		outputFile = boost::lexical_cast<string>(argv[i+1]);
+	  if (strncmp(argv[i],"-goBig",10) == 0)
+		goBig = boost::lexical_cast<int>(argv[i+1]);
 	}
 
 	// rank 0 setup
@@ -117,6 +121,15 @@ int main(int argc, char* argv[]) {
 
 	  mnGarch.load(garchFile, hdf5_binary);
 	  //mnGarch = mnGarch(span(0,gRows-1), span(0,gCols-1));
+
+	  // replicate data for larger dimension testing
+	  if (goBig > mnGarch.n_cols) {
+		int iReps = (int) goBig/mnGarch.n_cols;
+		cout << "----> iReps = " << iReps << endl;
+		mnGarch = repmat(mnGarch, 1, iReps + 1);
+		mnGarch = mnGarch(span::all, span(0, goBig-1));
+		cout << "----> size(mnGarch) = " << mnGarch.n_rows << " X " << mnGarch.n_cols << endl;
+	  }
 	  
 	  gRows = mnGarch.n_rows;
 	  gCols = mnGarch.n_cols;
@@ -202,6 +215,7 @@ int main(int argc, char* argv[]) {
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
 	  rt.t_dep_est_mc = MPI::Wtime();
+	  rt.t_shrink = MPI::Wtime();
 	  cout << "-----> Beginning shrinkage\n";
 	}
 	
@@ -358,6 +372,7 @@ int main(int argc, char* argv[]) {
 	double c2 = ((df - 2.0)/df);
 	Gemm(NORMAL, TRANSPOSE, c1, stGamma, stGamma, c2, sample);
 
+	/*
 	// start chol time
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
@@ -367,18 +382,29 @@ int main(int argc, char* argv[]) {
 	
 	// Cholesky
 	Cholesky(LOWER, sample);
-
+	*/
+	
 	// stop chol time
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
 	  rt.t_chol_mc = MPI::Wtime() - rt.t_chol_mc;
 	  rt.t_dep_est_mc = MPI::Wtime() - rt.t_dep_est_mc;
+	  //rt.t_VaR_mc = MPI::Wtime();
 	  cout << "----> Cholesky estimation done.\n";
 	}
 
+	
 	//-------------------------------------------------------------------------------
-	// Simulate random deviates
+	//VaR MC
 
+	
+
+	
+	//-------------------------------------------------------------------------------
+	//VaR LUT
+	
+
+	
 	
 	//-------------------------------------------------------------------------------
 	//
