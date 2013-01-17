@@ -43,9 +43,6 @@ HDF_L  = -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5
 
 include /Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/conf/elemvariables
 
-# ELEM_I = -I/Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/include
-# ELEM_L = -L/Users/jimmiegoode/Documents/Glimm/lib/elemental/elemental-0.77/build/lib
-
 endif
 
 # Galaxy speciffic
@@ -65,7 +62,6 @@ HDF_I = -I/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/include
 HDF_L = -L/nfs/user03/copula/20120323/lib/hdf5-1.8.9/install/lib -lhdf5
 
 include /nfs/user03/copula/20120323/lib/elemental-0.77/build/conf/elemvariables
-
 
 endif
 
@@ -91,15 +87,15 @@ LIBDIR=/nfs/user01/jimmie21/github/hfrisk/lib
 
 CCMPI  = mpic++
 BOOST  = -I ${LIBDIR}/boost_1_52_0
-GSL    = -I ${LIBDIR}/gsl-1.15/install/gsl/include
+GSL    = -I ${LIBDIR}/gsl-1.15/install/gsl/include -L ${LIBDIR}/gsl-1.15/install/gsl/lib
 MPI    = -I /usr/local/pkg/openmpi/include
-NLOPT  = -I ${LIBDIR}/nlopt-2.3/install/include -L ${LIBDIR}/nlopt-2.3/install/lib                                                                                    
+NLOPT  = -I ${LIBDIR}/nlopt-2.3/install/include -L ${LIBDIR}/nlopt-2.3/install/lib
 
 AD_I   = -I ${LIBDIR}/armadillo-3.6.1/include -I /usr/include #-I ${LIBDIR}/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/include
 AD_L   = -L /usr/lib/libblas -lblas /usr/lib/liblapack.so -lgfortran
 
 FFTW_I = -I ${LIBDIR}/fftw-3.3.2/installdir/include
-FFTW_L = -I ${LIBDIR}/fftw-3.3.2/installdir/lib
+FFTW_L = -L ${LIBDIR}/fftw-3.3.2/installdir/lib
 
 HDF_I  = -I ${LIBDIR}/hdf5-1.8.10/install/include
 HDF_L  = -L ${LIBDIR}/hdf5-1.8.10/install/lib -lhdf5
@@ -119,7 +115,7 @@ endif
 all: main
 
 main: $(OBJS)
-	$(CCMPI) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(HDF5_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+	$(CCMPI) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
 Constants.o: Constants.h Constants.cpp
 	$(CCMPI) $(CFLAGS) Constants.cpp
@@ -128,7 +124,7 @@ myskewt.o: myskewt.hpp myskewt.cpp Constants.h gamma.h IO.hpp Stats.hpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) myskewt.cpp
 
 msj.o: msj.h msj.cpp IO.hpp Stats.hpp mygarch.hpp myskewt.hpp mystable.hpp myskewt_lut.hpp
-	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) msj.cpp
+	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) $(FFTW_I) msj.cpp
 
 IO.o: IO.hpp IO.cpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(AD_I) IO.cpp
