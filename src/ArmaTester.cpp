@@ -15,6 +15,7 @@ using namespace arma;
 
 int main(int argc, char** argv) {
 
+  /*
   if (argc < 3)
 	assert(0 && "Too few arguments");
 
@@ -24,6 +25,10 @@ int main(int argc, char** argv) {
   mat x;
   x.load(fin, csv_ascii);
   x.save(fout, arma_binary);
+  */
+
+  mat X(2,2);
+  X.print("X = ");
 
   return 0;
 }

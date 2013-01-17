@@ -85,20 +85,22 @@ ifeq ($(TARGET), VOGON)
 
 LIBDIR=/nfs/user01/jimmie21/github/hfrisk/lib
 
+#export LD_LIBRARY_PATH=/nfs/user01/jimmie21/github/hfrisk/lib/armadillo-3.6.1/install/usr/lib64:$LD_LIBRARY_PATH
+
 CCMPI  = mpic++
-BOOST  = -I ${LIBDIR}/boost_1_52_0
-GSL    = -I ${LIBDIR}/gsl-1.15/install/gsl/include -L ${LIBDIR}/gsl-1.15/install/gsl/lib
-MPI    = -I /usr/local/pkg/openmpi/include
-NLOPT  = -I ${LIBDIR}/nlopt-2.3/install/include -L ${LIBDIR}/nlopt-2.3/install/lib
+BOOST  = -I${LIBDIR}/boost_1_52_0
+GSL    = -I${LIBDIR}/gsl-1.15/install/gsl/include -L${LIBDIR}/gsl-1.15/install/gsl/lib
+MPI    = -I/usr/local/pkg/openmpi/include
+NLOPT  = -I${LIBDIR}/nlopt-2.3/install/include -L${LIBDIR}/nlopt-2.3/install/lib
 
-AD_I   = -I ${LIBDIR}/armadillo-3.6.1/include -I /usr/include #-I ${LIBDIR}/OpenBLAS-v0.2.3-0/xianyi-OpenBLAS-48f075c/install/include
-AD_L   = -L /usr/lib/libblas -lblas /usr/lib/liblapack.so -lgfortran
+AD_I   = -I/nfs/user01/jimmie21/github/hfrisk/lib/armadillo-3.6.1/install/usr/include
+AD_L   = -L/nfs/user01/jimmie21/github/hfrisk/lib/armadillo-3.6.1/install/usr/lib64 -larmadillo
 
-FFTW_I = -I ${LIBDIR}/fftw-3.3.2/installdir/include
-FFTW_L = -L ${LIBDIR}/fftw-3.3.2/installdir/lib
+FFTW_I = -I${LIBDIR}/fftw-3.3.2/installdir/include
+FFTW_L = -L${LIBDIR}/fftw-3.3.2/installdir/lib
 
-HDF_I  = -I ${LIBDIR}/hdf5-1.8.10/install/include
-HDF_L  = -L ${LIBDIR}/hdf5-1.8.10/install/lib -lhdf5
+HDF_I  = -I${LIBDIR}/hdf5-1.8.10/install/include
+HDF_L  = -L${LIBDIR}/hdf5-1.8.10/install/lib -lhdf5
 
 include ${LIBDIR}/elemental-0.77/install/conf/elemvariables
 
@@ -152,6 +154,12 @@ myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
 
 ShardBinaries: ShardBinaries.cpp
 	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
+
+Csv2Binary: Csv2Binary.cpp
+	g++ -o Csv2Binary Csv2Binary.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
+
+ArmaTester: ArmaTester.cpp
+	g++ -o ArmaTester ArmaTester.cpp $(AD_I) $(AD_L)
 
 mygarch_par.o: mygarch_par.cpp mygarch.hpp MasterSlave.hpp
 	$(CCMPI) $(CFLAGS) ${ELEM_COMPILE_FLAGS} $(MPI) $(AD_I) mygarch_par.cpp
