@@ -23,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = MAC
+TARGET = VOGON
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -186,7 +186,7 @@ Copula.o: Copula.cpp Stats.o
 
 
 Cholesky: Cholesky.cpp
-	${CXX} ${ELEM_COMPILE_FLAGS} $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+	${CXX} ${ELEM_COMPILE_FLAGS} $(HDF_I) $(HDF_L) $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
 VaR_MC: VaR_MC.cpp
 	${CXX} ${ELEM_COMPILE_FLAGS} $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
