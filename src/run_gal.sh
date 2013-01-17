@@ -6,7 +6,7 @@ CG_EXP="${CG_DATA}/exports"
 
 mkdir ${CG_EXP}
 
-mpirun -np 32 ../bin/HFRisk \
+mpirun -np 33 ../bin/HFRisk \
 	-x OMP_NUM_THREADS \
 	-df "${CG_DATA}/csi_20030101_20120801_v3" \
 	-rf "${CG_EXP}/nill" \
@@ -22,7 +22,7 @@ mpirun -np 32 ../bin/HFRisk \
 	-lut_path "${CG_LUT}/test2" \
 	-doLUT 1 \
 	-margOnly 1 \
-	-goBig 1
+	-goBig 80000
 
 # mpirun -np 4 ../lib/tester \
 # 	-x OMP_NUM_THREADS \
