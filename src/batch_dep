@@ -1,0 +1,9 @@
+#PBS -N dep_ST
+#PBS -l nodes=4:towel:ppn=12
+
+#PBS -j oe
+#PBS -o /nfs/user01/jimmie21/github/hfrisk/src/RT_DEP/output.out
+
+cd /nfs/user01/jimmie21/github/hfrisk/src
+
+./run_vogon_dep.sh

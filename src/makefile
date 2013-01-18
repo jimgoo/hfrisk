@@ -23,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = MAC
+TARGET = VOGON
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)

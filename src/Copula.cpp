@@ -110,6 +110,8 @@ int main(int argc, char* argv[]) {
 	// rank 0 setup
 	if (commRank == 0) {
 
+	  rt.t_total_mc = MPI::Wtime();
+
 	  // Test if d=100,000 will fit in memory:
 	  /*
 		mnGarch.load(garchFile, arma_binary);
@@ -207,7 +209,6 @@ int main(int argc, char* argv[]) {
 	  stMu.Set(i, 0, vnGarch[idxMu + i*gRows]);
 	}
 	
-	
 	//-------------------------------------------------------------------------------
 	// Shrinkage
 	//-------------------------------------------------------------------------------
@@ -219,6 +220,7 @@ int main(int argc, char* argv[]) {
 	  cout << "-----> Beginning shrinkage\n";
 	}
 
+	/*
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
 	  cout << "-----> Subtracting column means...\n";
@@ -410,14 +412,19 @@ int main(int argc, char* argv[]) {
 	  cout << "----> Shrinkage done, starting dependency estimation.\n";
 	}
 
+	*/
 	//-------------------------------------------------------------------------------
 	// Cholesky
-
 
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
 	  cout << "-----> Gemm 7...\n";
 	}
+
+	// Random covariance
+	DistMatrix<R> sample(gCols, gCols, g);
+	Uniform(gCols, gCols, sample);
+	//
 	
 	double c1 = -2.0*df/((df - 2.0)*(df - 4.0));
 	double c2 = ((df - 2.0)/df);
@@ -441,23 +448,12 @@ int main(int argc, char* argv[]) {
 	  //rt.t_VaR_mc = MPI::Wtime();
 	  cout << "----> Cholesky estimation done.\n";
 	}
-
-	
-	//-------------------------------------------------------------------------------
-	//VaR MC
-
-	
-	
-	//-------------------------------------------------------------------------------
-	//VaR LUT
-	
-
-	
 	
 	//-------------------------------------------------------------------------------
 	//
 
 	if (commRank == 0) {
+	  rt.t_total_mc = MPI::Wtime() - rt.t_total_mc;
 	  printRT(rt, outputFile);
 	}
 	
