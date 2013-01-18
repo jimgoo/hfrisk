@@ -23,7 +23,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = VOGON
+TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -121,11 +121,6 @@ all: main
 main: $(OBJS)
 	$(CCMPI) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
-
-dep: Copula.o Stats.o
-	$(CCMPI) $(LFLAGS) -o ../bin/DepStruct Copula.o Stats.o $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
-
-
 Constants.o: Constants.h Constants.cpp
 	$(CCMPI) $(CFLAGS) Constants.cpp
 
@@ -184,16 +179,18 @@ Copula.o: Copula.cpp Stats.o
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(NLOPT) $(AD_I) ${ELEM_COMPILE_FLAGS} Copula.cpp
 
 
+# Dependency Estimation
+dep: Copula.o Stats.o
+	$(CCMPI) $(LFLAGS) -o ../bin/DepStruct Copula.o Stats.o $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
+
+# Cholesky Factorization
 Cholesky: Cholesky.cpp
 	${CXX} ${ELEM_COMPILE_FLAGS} $(HDF_I) $(HDF_L) $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
-<<<<<<< HEAD
 
-VaR_MC: VaR_MC.cpp
-	${CXX} ${ELEM_COMPILE_FLAGS} $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
-=======
->>>>>>> 0df7cfea632cb8b64259c0fbadf2b8e7a7cd43c5
-
+# Monte Carlo VaR
+MC: MonteCarlo.cpp
+	${CXX} ${ELEM_COMPILE_FLAGS} $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(BOOST)
 
 
 clean:

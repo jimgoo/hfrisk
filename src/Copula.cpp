@@ -218,6 +218,11 @@ int main(int argc, char* argv[]) {
 	  rt.t_shrink = MPI::Wtime();
 	  cout << "-----> Beginning shrinkage\n";
 	}
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Subtracting column means...\n";
+	}
 	
 	// get column sums
 	DistMatrix<R> colSum(gCols, 1, g);
@@ -231,6 +236,12 @@ int main(int argc, char* argv[]) {
 	for (int j = 0; j < gCols; j++)
 	  for (int i = 0; i < iL; i++)
 		X.Set(i, j, X.Get(i,j) - colSum.Get(j,0)/iL);
+
+	
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Computing sample covariance (Gemm 1)...\n";
+	}
 	
 	// Compute sample covariance
 	//	(1/n) * X.t() * X
@@ -244,6 +255,11 @@ int main(int argc, char* argv[]) {
 
 	assert(sample.Width() == sample.Height()); // check square
 	assert(sample.Width() == gCols);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Constructing the prior...\n";
+	}
 	
 	// Construct the prior:
 	//	meanvar*mnEye + meancov*(ones(n,n) - diagmat(ones(n)));
@@ -282,10 +298,22 @@ int main(int argc, char* argv[]) {
 	DistMatrix<R> eye(gCols, gCols, g);
 	Identity(gCols, gCols, eye);
 
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Gemm 2...\n";
+	}
+	
 	// prior = tmp1 + prior
 	Gemm(NORMAL, NORMAL, (double)1, tmp1, eye, (double)1, prior);
 
 	//prior.Print("Prior = ");
+
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Gemm 3...\n";
+	}
 	
 	//tmp1 =  sample - prior
 	tmp1 = prior;
@@ -298,6 +326,12 @@ int main(int argc, char* argv[]) {
 	  for (int j = 0; j < gCols; j++)
 		Y.Set(i, j, std::pow(X.Get(i,j), 2.0));
 
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Gemm 4...\n";
+	}
+	
 	// tmp1 = Y' * Y
 	Gemm(TRANSPOSE, NORMAL, (double)1, Y, Y, (double)0, tmp1);
 
@@ -328,6 +362,12 @@ int main(int argc, char* argv[]) {
 
 	// tmp1 = 1/t * Y' * Y
     alpha = 1.0/((double)iL - 1.0);
+
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Gemm 5...\n";
+	}
 	
 	Gemm(TRANSPOSE, NORMAL, alpha, Y, Y, (double)0, tmp1);
 
@@ -343,6 +383,12 @@ int main(int argc, char* argv[]) {
 	const double k = (p - rDiag)/c;
 	const double shrinkage = std::max(0.0, std::min(1.0, k/((double)iL)));
 
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Gemm 6...\n";
+	}
+	
 	// shrinkage*prior + (1-shrinkage)*sample
 	Gemm(NORMAL, NORMAL, shrinkage, prior, eye, 1.0-shrinkage, sample);
 
@@ -366,13 +412,17 @@ int main(int argc, char* argv[]) {
 
 	//-------------------------------------------------------------------------------
 	// Cholesky
-		
-	//Gemm(NORMAL, NORMAL, ((df - 2.0)/df), sample, eye, (2.0*df)/((df - 2.0)*(df - 4.0)),
+
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (commRank == 0) {
+	  cout << "-----> Gemm 7...\n";
+	}
+	
 	double c1 = -2.0*df/((df - 2.0)*(df - 4.0));
 	double c2 = ((df - 2.0)/df);
 	Gemm(NORMAL, TRANSPOSE, c1, stGamma, stGamma, c2, sample);
 
-	/*
 	// start chol time
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
@@ -381,11 +431,8 @@ int main(int argc, char* argv[]) {
 	}
 	
 	// Cholesky
-	Cholesky(LOWER, sample);
-	*/
-   
 	//Cholesky(LOWER, sample);
-
+   
 	// stop chol time
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (commRank == 0) {
@@ -400,7 +447,6 @@ int main(int argc, char* argv[]) {
 	//VaR MC
 
 	
-
 	
 	//-------------------------------------------------------------------------------
 	//VaR LUT
