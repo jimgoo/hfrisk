@@ -9,11 +9,12 @@ OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.
 #OBJS     = mygarch_par.o #MasterSlave.o
 #OBJS     = Backtest.o MasterSlave.o mygarch_par.o IO.o
 #OBJS     = Copula.o Stats.o
-EXE      = ../bin/HFRisk
+
+BINDIR   = ../bin
+EXE      = $(BINDIR)/HFRisk
 DEBUG    =
 CFLAGS   = -O2 -w -c $(DEBUG)
 LFLAGS   = -Wall $(DEBUG)
-OUTPUT   = -o $(EXE)
 LNK      = -lgsl -lgslcblas -lnlopt -lfftw3 -lm
 
 # extra linker flags for MAC mpic++ only.
@@ -23,7 +24,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-TARGET = MAC
+# TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -119,7 +120,7 @@ endif
 all: main
 
 main: $(OBJS)
-	$(CCMPI) $(LFLAGS) $(OUTPUT) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+	$(CCMPI) $(LFLAGS) -o $(EXE) $(OBJS) $(GSL) $(BOOST) $(NLOPT) $(HDF_L) $(AD_L) $(MPI) $(FFTW_L) $(LNK) ${ELEM_LINK_FLAGS} ${ELEM_LIBS} $(MPICCF) ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
 
 Constants.o: Constants.h Constants.cpp
 	$(CCMPI) $(CFLAGS) Constants.cpp
@@ -155,13 +156,13 @@ myskewt_lut.o: myskewt_lut.hpp myskewt_lut.cpp myskewt.hpp
 	$(CCMPI) $(CFLAGS) $(GSL) $(BOOST) $(HDF_I) $(MPI) $(AD_I) $(NLOPT) myskewt_lut.cpp
 
 ShardBinaries: ShardBinaries.cpp
-	g++ -o ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
+	g++ -o $(BINDIR)/ShardBinaries ShardBinaries.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
 
 Csv2Binary: Csv2Binary.cpp
-	g++ -o Csv2Binary Csv2Binary.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
+	g++ -o $(BINDIR)/Csv2Binary Csv2Binary.cpp $(BOOST) $(HDF_I) $(HDF_L) $(AD_I) $(AD_L)
 
 ArmaTester: ArmaTester.cpp
-	g++ -o ArmaTester ArmaTester.cpp $(AD_I) $(AD_L)
+	g++ -o $(BINDIR)/ArmaTester ArmaTester.cpp $(AD_I) $(AD_L)
 
 mygarch_par.o: mygarch_par.cpp mygarch.hpp MasterSlave.hpp
 	$(CCMPI) $(CFLAGS) ${ELEM_COMPILE_FLAGS} $(MPI) $(AD_I) mygarch_par.cpp
@@ -209,17 +210,5 @@ send:
 sltest:
 	$(CCMPI) -O2 $(LFLAGS) $(BLAS) $(LAPACK) $(SCALAPACK) $(MPI) sltest.cpp -o sltest 
 
-
-# g++ -o ShardBinaries ShardBinaries.cpp -I/opt/local/include -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5 -lhdf5 -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include -framework Accelerate
-
-# mpic++  -O2 -w -c  -I/opt/local/include/gsl -I/opt/local/include -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include -I/opt/local/include/openmpi  Stats.cpp
-
-# g++ -c -I/opt/local/include -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include  -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include ShardBinaries.cpp
-
-# /usr/bin/clang++ -o ShardBinaries ShardBinaries.cpp -I/opt/local/include -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5 -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include -framework Accelerate -I/opt/local/include/openmpi -L/opt/local/lib -lmpi_cxx -lmpi -lm
-
-
-# g++ -o ShardBinaries ShardBinaries.cpp -I/opt/local/include -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5 -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include -framework Accelerate -I/opt/local/include/openmpi -L/opt/local/lib -lmpi_cxx -lmpi -lm
-
-# /usr/bin/clang++ -o ShardBinaries ShardBinaries.cpp -I/opt/local/include -I/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/include -I/Users/jimmiegoode/Documents/Glimm/lib/armadillo-3.6.1/include -L/Users/jimmiegoode/Documents/Glimm/lib/hdf5-1.8.9/install/lib -lhdf5  -framework Accelerate -I/opt/local/include/openmpi -L/opt/local/lib -lmpi_cxx -lmpi -lm
-
+test:
+	echo $(TARGET)

@@ -98,9 +98,6 @@ string arr2str(vec a) {
 
 void myskewt_lut::save(string path, file_type type, string ext) {
 
-  //file_type type = csv_ascii;
-  //string ext = ".csv";
-  
   string info = "df = " + boost::lexical_cast<string>(df) + "\n"
 	+ "d = " + boost::lexical_cast<string>(d) + "\n"
 	+ "nSim = " + boost::lexical_cast<string>(nSim) + "\n"
@@ -126,9 +123,6 @@ void myskewt_lut::save(string path, file_type type, string ext) {
 //-------------------------------------------------------------------------------
 
 void myskewt_lut::load(string folder, file_type type, string ext) {
-
-  //file_type type = csv_ascii;
-  //string ext = ".csv";
 
   cout << "Loading LUT from: '" << folder << "'...";
   
@@ -218,8 +212,8 @@ void myskewt_lut::lut_var(vec w, vec beta, vec mu, double df, mat A, double epsi
   int d = w.n_rows;
   assert(d == mu.n_rows && d == beta.n_rows);
 
-  mat Ainv     = inv(A);
-  vec wHat     = A.t() * w;
+  mat Ainv     = inv(A);        // Big step! Take inverse of d X d Cholesky factor A.
+  vec wHat     = A.t() * w;     // (d X d) * (d X 1)
   double normW = norm(wHat,2);
   vec betaHat  = Ainv * beta;
   vec e1       = wHat / normW;

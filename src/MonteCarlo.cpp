@@ -94,11 +94,10 @@ int main( int argc, char* argv[] ){
   MPI_Barrier(comm);
   if (commRank == 0) {
 	t_ST = MPI::Wtime() - t_ST;
-	t_AS = MPI::Wtime();
 	cout << "----> ST Done. (" << t_ST << " sec)" << endl;
+	t_AS = MPI::Wtime();
 	cout << "----> Starting AS..." << endl;
   }
-
 
   
   DistMatrix<R> mu2(1, n, grid);
@@ -119,9 +118,8 @@ int main( int argc, char* argv[] ){
 
    MPI_Barrier(comm);
   if (commRank == 0) {
-	t_ST = MPI::Wtime() - t_ST;
-	t_AS = MPI::Wtime();
-	cout << "----> AS Done. (" << t_AS - t_ST << " sec)" << endl;
+	t_AS = MPI::Wtime() - t_AS;
+	cout << "----> AS Done. (" << t_AS << " sec)" << endl;
 
   }
 
