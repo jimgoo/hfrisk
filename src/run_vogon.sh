@@ -8,39 +8,20 @@ CG_DATA="/nfs/user01/jimmie21/github/hfrisk/data"
 CG_LUT="/nfs/user01/jimmie21/LUTs"
 CG_EXP="${CG_DATA}/exports"
 
+# number of processors
+NP=24
 
-mpirun -np 60 ../bin/HFRisk \
-	-x OMP_NUM_THREADS \
+MC=10
+IT=1
+
+mpirun -np "${NP}" ../bin/HFRisk \
 	-df "${CG_DATA}/csi_20030101_20120801_v3" \
-	-rf "${CG_EXP}/ST_5109" \
-	-mc -1 \
-	-nSims 10000 \
+	-rf "${CG_EXP}/np=${NP}_mc=${MC}_innov=${IT}" \
+	-mc "${MC}" \
 	-v 0 \
-	-margOnly 0 \
-	-innovType 2 \
-	-depStruct 1 \
-	-doCheckEigs 0 \
+	-margOnly 1 \
+	-innovType "${IT}" \
 	-beginDate 20080102 \
 	-endDate 20080105 \
-	-lut_path "${CG_LUT}/test2" \
-	-doLUT 0 \
-	-margOnly 1 \
-	-goBig 0
+	-goBig "${MC}"
 
-# mpirun -np 4 ../lib/tester \
-# 	-x OMP_NUM_THREADS \
-# 	-df /nfs/user03/jimmie21/data/csi_20030101_20120801_v3 \
-# 	-rf /nfs/user03/jimmie21/data/exports/20130105_ST \
-# 	-mc 5 \
-# 	-nSims 10000 \
-# 	-v 1 \
-# 	-margOnly 0 \
-# 	-innovType 1 \
-# 	-depStruct 1 \
-# 	-doCheckEigs 0 \
-# 	-beginDate 20080102 \
-# 	-endDate 20080104 \
-# 	-lut_path /nfs/user03/jimmie21/LUTs/test2 \
-# 	-doLUT 1
-
-# mpirun -np 64 ../lib/tester -x OMP_NUM_THREADS -df /nfs/user03/jimmie21/data/csi_20030101_20120801_v3 -rf /nfs/user03/jimmie21/data/exports/20130105_ST -nSims 10000 -v 1 -margOnly 0 -innovType 1 -depStruct 1 -doCheckEigs 0 -beginDate 20080102 -endDate 20080104 -lut_path /nfs/user03/jimmie21/LUTs/t2 -doLUT 1 -iS 5
