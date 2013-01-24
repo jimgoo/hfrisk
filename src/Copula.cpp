@@ -28,9 +28,7 @@ typedef Complex<R> C;
 //-------------------------------------------------------------------------------
 
 mat mnGarch;
-
-// string garchFile = "/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/csi/patentData/csi_20030101_20120801_v3/logret.abin";
-string garchFile = "/Users/jimmiegoode/Documents/Glimm/github/hfrisk/data/csi/patentData/exports/20130105_ST/mnResults/20080103.h5";
+string garchFile = "";
 
 int gRows, gCols, vnGarchSize;
 double *vnGarch;

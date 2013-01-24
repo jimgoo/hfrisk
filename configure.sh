@@ -154,3 +154,23 @@ make install
 #           -D MATH_LIBS="-D__ACCELERATE_ -framework Accelerate" ..
 #make
 #make install
+
+
+
+# BLUEGENE
+
+cmake -D CMAKE_INSTALL_PREFIX=/gpfs/home3/j/jgoode/lib/elemental-0.77/install \
+	-D MATH_LIBS="-L/bgsys/apps/lapack-3.2/lapack-3.2 -llapack_BGP -lblas_BGP -lgfortran_BGP" ..
+
+cmake -D CMAKE_INSTALL_PREFIX=/gpfs/home3/j/jgoode/lib/elemental-0.77/install \
+	-D MATH_LIBS="-L/gpfs/home3/j/jgoode/examples/lapack/lapack-3.3.0 -llapack -lblas -lm" ..
+
+-L/bgsys/apps/lapack-3.2/lapack-3.2 -llapack_BGP.a
+
+cmake -D CMAKE_INSTALL_PREFIX=/gpfs/home3/j/jgoode/lib/elemental-0.77/install \
+	-D MATH_LIBS="/bgsys/apps/lapack-3.2/lapack-3.2/liblapack_BGP.a /bgsys/apps/lapack-3.2/lapack-3.2/libblas_BGP.a" ..
+
+# THIS ONE WORKS
+cmake -D CMAKE_INSTALL_PREFIX=/gpfs/home3/j/jgoode/lib/elemental-0.77/install \
+	-D MATH_LIBS="-L/gpfs/home3/j/jgoode/examples/lapack/lapack-3.3.0 -llapack -lblas -lgfortran" ..
+

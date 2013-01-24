@@ -24,7 +24,14 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
+<<<<<<< HEAD
 #TARGET = MAC
+=======
+# TARGET = {MAC, GALAXY, VOGON}
+#
+# Pass this with
+#    $ make TARGET=MAC
+>>>>>>> 82af5daefe281ccf2b001abbc61dfb64b0b67ebe
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
