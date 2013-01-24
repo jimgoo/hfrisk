@@ -9,19 +9,61 @@ CG_LUT="/nfs/user01/jimmie21/LUTs"
 CG_EXP="${CG_DATA}/exports"
 
 # number of processors
-NP=24
+NP=252
 
-MC=10
+MC=5109
 IT=1
 
 mpirun -np "${NP}" ../bin/HFRisk \
 	-df "${CG_DATA}/csi_20030101_20120801_v3" \
 	-rf "${CG_EXP}/np=${NP}_mc=${MC}_innov=${IT}" \
-	-mc "${MC}" \
+	-mc -1 \
 	-v 0 \
 	-margOnly 1 \
 	-innovType "${IT}" \
 	-beginDate 20080102 \
 	-endDate 20080105 \
-	-goBig "${MC}"
+	-goBig 0
+
+IT=2
+
+mpirun -np "${NP}" ../bin/HFRisk \
+	-df "${CG_DATA}/csi_20030101_20120801_v3" \
+	-rf "${CG_EXP}/np=${NP}_mc=${MC}_innov=${IT}" \
+	-mc -1 \
+	-v 0 \
+	-margOnly 1 \
+	-innovType "${IT}" \
+	-beginDate 20080102 \
+	-endDate 20080105 \
+	-goBig 0
+
+######################
+
+MC=100000
+IT=1
+
+mpirun -np "${NP}" ../bin/HFRisk \
+	-df "${CG_DATA}/csi_20030101_20120801_v3" \
+	-rf "${CG_EXP}/np=${NP}_mc=${MC}_innov=${IT}" \
+	-mc -1 \
+	-v 0 \
+	-margOnly 1 \
+	-innovType "${IT}" \
+	-beginDate 20080102 \
+	-endDate 20080105 \
+	-goBig 100000
+
+IT=2
+
+mpirun -np "${NP}" ../bin/HFRisk \
+	-df "${CG_DATA}/csi_20030101_20120801_v3" \
+	-rf "${CG_EXP}/np=${NP}_mc=${MC}_innov=${IT}" \
+	-mc -1 \
+	-v 0 \
+	-margOnly 1 \
+	-innovType "${IT}" \
+	-beginDate 20080102 \
+	-endDate 20080105 \
+	-goBig 100000
 

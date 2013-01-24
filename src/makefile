@@ -24,7 +24,7 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-# TARGET = MAC
+#TARGET = MAC
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)

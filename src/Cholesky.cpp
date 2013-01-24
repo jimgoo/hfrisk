@@ -21,13 +21,11 @@ int main( int argc, char* argv[] ) {
 
   try {
 	
-	  //const int rows = Input("-rows", "number of rows (observations)", 100);
-	  //const int cols = Input("-cols", "number of cols (assets)", 100);
-	  const int n = Input("-n", "number of assets", 100);
+	  const int n = Input("-n", "number of assets", 0);
 	  const bool print = Input("-print", "print matrices?", false);
 	  
 	  ProcessInput();
-	  //PrintInputReport();
+	  PrintInputReport();
 
 	  Grid g( comm );
 
@@ -50,6 +48,7 @@ int main( int argc, char* argv[] ) {
 
 	  MPI_Barrier(MPI_COMM_WORLD);
 	  if (commRank == 0) {
+		cout << "----> Matrix created, starting Cholesky.\n";
 		t_chol = MPI::Wtime();
 	  }
 
@@ -58,7 +57,7 @@ int main( int argc, char* argv[] ) {
 	  MPI_Barrier(MPI_COMM_WORLD);
 	  if (commRank == 0) {
 		t_chol = MPI::Wtime() - t_chol;
-		cout << "Cholesky runtime = " << t_chol << endl;
+		cout << "----> Cholesky runtime = " << t_chol << endl;
 	  }
         
     } catch( ArgException& e ) {

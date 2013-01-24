@@ -104,7 +104,7 @@ file_type lut_type = csv_ascii;
 string lut_ext = ".csv";
 
 vec wts;
-int doLUT = 1;
+int doLUT = 0;
 int numCores;
 
 int goBig = 0;
