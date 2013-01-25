@@ -12,26 +12,7 @@ Job ID               Username Queue    Jobname          SessID NDS   TSK Memory 
 21898.dontpanic      vrana    towel    STDIN               --      1   8    --  04:00 Q   -- 
    p530013/7+p530013/6+p530013/5+p530013/4+p530013/3+p530013/2+p530013/1
    +p530013/0
-21933.dontpanic      hyulim   towel    run_262K-64p-10S  15024     6  72    --    --  R 70:24
-   towel16/11+towel16/10+towel16/9+towel16/8+towel16/7+towel16/6+towel16/5
-   +towel16/4+towel16/3+towel16/2+towel16/1+towel16/0+towel07/11+towel07/10
-   +towel07/9+towel07/8+towel07/7+towel07/6+towel07/5+towel07/4+towel07/3
-   +towel07/2+towel07/1+towel07/0+towel06/11+towel06/10+towel06/9+towel06/8
-   +towel06/7+towel06/6+towel06/5+towel06/4+towel06/3+towel06/2+towel06/1
-   +towel06/0+towel05/11+towel05/10+towel05/9+towel05/8+towel05/7+towel05/6
-   +towel05/5+towel05/4+towel05/3+towel05/2+towel05/1+towel05/0+towel04/11
-   +towel04/10+towel04/9+towel04/8+towel04/7+towel04/6+towel04/5+towel04/4
-   +towel04/3+towel04/2+towel04/1+towel04/0+towel03/11+towel03/10+towel03/9
-   +towel03/8+towel03/7+towel03/6+towel03/5+towel03/4+towel03/3+towel03/2
-   +towel03/1+towel03/0
-21989.dontpanic      lina     towel    2d_3d_lat_50_20.  18987     3  36    --    --  R 23:55
-   towel22/11+towel22/10+towel22/9+towel22/8+towel22/7+towel22/6+towel22/5
-   +towel22/4+towel22/3+towel22/2+towel22/1+towel22/0+towel21/11+towel21/10
-   +towel21/9+towel21/8+towel21/7+towel21/6+towel21/5+towel21/4+towel21/3
-   +towel21/2+towel21/1+towel21/0+towel20/11+towel20/10+towel20/9+towel20/8
-   +towel20/7+towel20/6+towel20/5+towel20/4+towel20/3+towel20/2+towel20/1
-   +towel20/0
-21998.dontpanic      tkaman   towel    app_c3.sh         20733     6  72    --    --  R 21:00
+21998.dontpanic      tkaman   towel    app_c3.sh         20733     6  72    --    --  R 27:23
    towel19/11+towel19/10+towel19/9+towel19/8+towel19/7+towel19/6+towel19/5
    +towel19/4+towel19/3+towel19/2+towel19/1+towel19/0+towel18/11+towel18/10
    +towel18/9+towel18/8+towel18/7+towel18/6+towel18/5+towel18/4+towel18/3
@@ -43,7 +24,7 @@ Job ID               Username Queue    Jobname          SessID NDS   TSK Memory 
    +towel14/3+towel14/2+towel14/1+towel14/0+towel13/11+towel13/10+towel13/9
    +towel13/8+towel13/7+towel13/6+towel13/5+towel13/4+towel13/3+towel13/2
    +towel13/1+towel13/0
-22010.dontpanic      hyulim   towel    run_262K-64p-10S   8115     6  72    --    --  R 13:07
+22010.dontpanic      hyulim   towel    run_262K-64p-10S   8115     6  72    --    --  R 19:30
    towel39/11+towel39/10+towel39/9+towel39/8+towel39/7+towel39/6+towel39/5
    +towel39/4+towel39/3+towel39/2+towel39/1+towel39/0+towel37/11+towel37/10
    +towel37/9+towel37/8+towel37/7+towel37/6+towel37/5+towel37/4+towel37/3
@@ -55,7 +36,7 @@ Job ID               Username Queue    Jobname          SessID NDS   TSK Memory 
    +towel34/3+towel34/2+towel34/1+towel34/0+towel33/11+towel33/10+towel33/9
    +towel33/8+towel33/7+towel33/6+towel33/5+towel33/4+towel33/3+towel33/2
    +towel33/1+towel33/0
-22013.dontpanic      tkaman   towel    app_c3r1_fromold   6584     6  72    --    --  R 05:07
+22013.dontpanic      tkaman   towel    app_c3r1_fromold   6584     6  72    --    --  R 11:30
    towel30/11+towel30/10+towel30/9+towel30/8+towel30/7+towel30/6+towel30/5
    +towel30/4+towel30/3+towel30/2+towel30/1+towel30/0+towel29/11+towel29/10
    +towel29/9+towel29/8+towel29/7+towel29/6+towel29/5+towel29/4+towel29/3
@@ -67,26 +48,27 @@ Job ID               Username Queue    Jobname          SessID NDS   TSK Memory 
    +towel11/3+towel11/2+towel11/1+towel11/0+towel10/11+towel10/10+towel10/9
    +towel10/8+towel10/7+towel10/6+towel10/5+towel10/4+towel10/3+towel10/2
    +towel10/1+towel10/0
-22014.dontpanic      xigong   towel    STDIN             27141     8  64    --  04:00 R 03:30
-   p540015/7+p540015/6+p540015/5+p540015/4+p540015/3+p540015/2+p540015/1
-   +p540015/0+p540014/7+p540014/6+p540014/5+p540014/4+p540014/3+p540014/2
-   +p540014/1+p540014/0+p540012/7+p540012/6+p540012/5+p540012/4+p540012/3
-   +p540012/2+p540012/1+p540012/0+p540011/7+p540011/6+p540011/5+p540011/4
-   +p540011/3+p540011/2+p540011/1+p540011/0+p540010/7+p540010/6+p540010/5
-   +p540010/4+p540010/3+p540010/2+p540010/1+p540010/0+p540008/7+p540008/6
-   +p540008/5+p540008/4+p540008/3+p540008/2+p540008/1+p540008/0+p540006/7
-   +p540006/6+p540006/5+p540006/4+p540006/3+p540006/2+p540006/1+p540006/0
-   +p540005/7+p540005/6+p540005/5+p540005/4+p540005/3+p540005/2+p540005/1
-   +p540005/0
-22024.dontpanic      ythuang  towel    STDIN              8605     2  24    --  04:00 R 01:04
+22049.dontpanic      xigong   towel    STDIN              9926     6  72    --  04:00 R 03:12
    towel32/11+towel32/10+towel32/9+towel32/8+towel32/7+towel32/6+towel32/5
-   +towel32/4+towel32/3+towel32/2+towel32/1+towel32/0+towel02/11+towel02/10
-   +towel02/9+towel02/8+towel02/7+towel02/6+towel02/5+towel02/4+towel02/3
-   +towel02/2+towel02/1+towel02/0
-22025.dontpanic      jimmie21 towel    STDIN              1670     1  12    --  04:00 C 00:00
-   towel08/11+towel08/10+towel08/9+towel08/8+towel08/7+towel08/6+towel08/5
-   +towel08/4+towel08/3+towel08/2+towel08/1+towel08/0
-22026.dontpanic      jimmie21 towel    STDIN               --      5  60    --  04:00 C   -- 
-    -- 
-22027.dontpanic      jimmie21 towel    STDIN               --      4  48    --  04:00 C   -- 
+   +towel32/4+towel32/3+towel32/2+towel32/1+towel32/0+towel20/11+towel20/10
+   +towel20/9+towel20/8+towel20/7+towel20/6+towel20/5+towel20/4+towel20/3
+   +towel20/2+towel20/1+towel20/0+towel16/11+towel16/10+towel16/9+towel16/8
+   +towel16/7+towel16/6+towel16/5+towel16/4+towel16/3+towel16/2+towel16/1
+   +towel16/0+towel08/11+towel08/10+towel08/9+towel08/8+towel08/7+towel08/6
+   +towel08/5+towel08/4+towel08/3+towel08/2+towel08/1+towel08/0+towel07/11
+   +towel07/10+towel07/9+towel07/8+towel07/7+towel07/6+towel07/5+towel07/4
+   +towel07/3+towel07/2+towel07/1+towel07/0+towel06/11+towel06/10+towel06/9
+   +towel06/8+towel06/7+towel06/6+towel06/5+towel06/4+towel06/3+towel06/2
+   +towel06/1+towel06/0
+22061.dontpanic      rkaufman towel    STDIN             21589     1   1    --  04:00 R 01:48
+   p540004/1
+22081.dontpanic      hyulim   towel    run_262K-64p-10S   9259     4  48    --    --  R 00:12
+   towel21/11+towel21/10+towel21/9+towel21/8+towel21/7+towel21/6+towel21/5
+   +towel21/4+towel21/3+towel21/2+towel21/1+towel21/0+towel05/11+towel05/10
+   +towel05/9+towel05/8+towel05/7+towel05/6+towel05/5+towel05/4+towel05/3
+   +towel05/2+towel05/1+towel05/0+towel04/11+towel04/10+towel04/9+towel04/8
+   +towel04/7+towel04/6+towel04/5+towel04/4+towel04/3+towel04/2+towel04/1
+   +towel04/0+towel03/11+towel03/10+towel03/9+towel03/8+towel03/7+towel03/6
+   +towel03/5+towel03/4+towel03/3+towel03/2+towel03/1+towel03/0
+22084.dontpanic      jimmie21 towel    Cholesky2           --      8  96    --    --  Q   -- 
     -- 

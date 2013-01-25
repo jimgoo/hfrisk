@@ -1,0 +1,95 @@
+==> runTimesElem2/chol_d=50000_np=12.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 12
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 599.022 seconds. GFlops = 69.5578
+
+==> runTimesElem2/chol_d=50000_np=24.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 24
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 363.77 seconds. GFlops = 114.541
+
+==> runTimesElem2/chol_d=50000_np=36.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 36
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 427.974 seconds. GFlops = 97.3578
+
+==> runTimesElem2/chol_d=50000_np=48.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 48
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 348.168 seconds. GFlops = 119.674
+
+==> runTimesElem2/chol_d=50000_np=60.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 60
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 315.752 seconds. GFlops = 131.96
+
+==> runTimesElem2/chol_d=50000_np=72.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 72
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 284.314 seconds. GFlops = 146.552
+
+==> runTimesElem2/chol_d=50000_np=84.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 84
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 267.019 seconds. GFlops = 156.044
+
+==> runTimesElem2/chol_d=50000_np=96.txt <==
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 96
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 244.986 seconds. GFlops = 170.078

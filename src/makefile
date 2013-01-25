@@ -24,14 +24,11 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-<<<<<<< HEAD
 #TARGET = MAC
-=======
 # TARGET = {MAC, GALAXY, VOGON}
 #
 # Pass this with
 #    $ make TARGET=MAC
->>>>>>> 82af5daefe281ccf2b001abbc61dfb64b0b67ebe
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)
@@ -195,6 +192,12 @@ dep: Copula.o Stats.o
 # Cholesky Factorization
 Cholesky: Cholesky.cpp
 	${CXX} ${ELEM_COMPILE_FLAGS} $(HDF_I) $(HDF_L) $(AD_I) $(AD_L) $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+
+
+# Cholesky Factorization - Elemental
+CholeskyElem: CholeskyElem.cpp
+	${CXX} ${ELEM_COMPILE_FLAGS} $< -o ../bin/$@ ${ELEM_LINK_FLAGS} ${ELEM_LIBS}
+
 
 # Monte Carlo VaR
 MC: MonteCarlo.cpp

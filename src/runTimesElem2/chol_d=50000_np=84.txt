@@ -1,0 +1,67 @@
+Optional arguments:
+  --gridHeight
+    description:   process grid height
+    type string:   i
+    default value: 0
+    used value:    0
+    NOT found
+
+  --uplo
+    description:   upper or lower storage: L/U
+    type string:   c
+    default value: L
+    used value:    L
+    NOT found
+
+  --height
+    description:   height of matrix
+    type string:   i
+    default value: 100
+    used value:    50000
+    found
+
+  --nb
+    description:   algorithmic blocksize
+    type string:   i
+    default value: 96
+    used value:    96
+    NOT found
+
+  --nbLocal
+    description:   local blocksize
+    type string:   i
+    default value: 32
+    used value:    32
+    NOT found
+
+  --correctness
+    description:   test correctness?
+    type string:   b
+    default value: 1
+    used value:    false
+    found
+
+  --print
+    description:   print matrices?
+    type string:   b
+    default value: 0
+    used value:    0
+    NOT found
+
+Out of 0 required arguments, 0 were not specified.
+Out of 7 optional arguments, 5 were not specified.
+
+---------------------
+Size Info:
+---------------------
+  Matrix size (m) = 50000
+  Algorithmic blocksize (nb) = 96
+  Local blocksize (nbLocal) = 32
+  Grid Rows (r) = 84
+  Grid Cols (c) = 1
+Will test CholeskyL
+---------------------
+Testing with doubles:
+---------------------
+  Starting Cholesky factorization...DONE.
+  Time = 267.019 seconds. GFlops = 156.044
