@@ -10,6 +10,8 @@ OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.
 #OBJS     = Backtest.o MasterSlave.o mygarch_par.o IO.o
 #OBJS     = Copula.o Stats.o
 
+#OBJS = Stats.o myskewt.o IO.o skeweduvstudenttpdf.o gamma.o mygarch.o
+
 BINDIR   = ../bin
 EXE      = $(BINDIR)/HFRisk
 DEBUG    =
@@ -24,14 +26,11 @@ MPICCF =
 # Target Speciffic Parameters
 #-------------------------------------------------------------------------------
 
-<<<<<<< HEAD
 #TARGET = MAC
-=======
 # TARGET = {MAC, GALAXY, VOGON}
 #
 # Pass this with
 #    $ make TARGET=MAC
->>>>>>> 82af5daefe281ccf2b001abbc61dfb64b0b67ebe
 
 #Mac speciffic
 ifeq ($(TARGET), MAC)

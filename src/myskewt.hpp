@@ -36,6 +36,8 @@
 #include "skeweduvstudenttpdf.h"
 #include "IO.hpp"
 #include "Stats.hpp"
+#include "mygarch.hpp"
+
 
 using namespace std;
 
@@ -90,11 +92,32 @@ public:
 
   static void std_pars(double gamma, double df, double &mu, double &sigma);
 
-  static vec cdf(vec X, double gamma, double mu, double df, double sigma);
+  static vec cdf(vec x, int iSamp, double gamma, double mu, double df, double sigma);
+  static vec inv_cdf(vec u, double gamma, double mu, double df, double sigma);
 
   static void tester(int c);
 
-  static vec inv_cdf(vec u, double gamma, double mu, double df, double sigma);
+  static vec inv_cdf(vec pvalues, int iN, double gamma, double mu, double df, double sigma);
+
+  static void portSample(const int nSim,
+							 const vec gamma,
+							 const vec mu,
+							 const double df,
+							 const mat mnGarchPars,
+							 const vec wts,
+							 const mat A,
+							 mat &resid,
+							 vec &nextMeans,
+							 vec &nextSigmas,
+							 vec &portRets) ;
+
+  static void estimateSigma(const mat sample,
+							const vec gamma,
+							const vec mu,
+							const double df,
+							const bool doShrink,
+							double &shrinkage,
+							mat &C);
 };
 
 

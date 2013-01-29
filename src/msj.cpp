@@ -106,8 +106,7 @@ string lut_ext = ".csv";
 vec wts;
 int doLUT = 0;
 int numCores;
-
-int goBig = 0;
+int goBig = 0; 
 
 //-------------------------------------------------------------------------------
 
@@ -132,6 +131,8 @@ static void process_mem_usage() {
 
 int main(int argc, char **argv) {
   
+  //==========================================
+  
   int rank;
   double t_all;
 
@@ -153,7 +154,7 @@ int main(int argc, char **argv) {
   // Grid g( comm );
   
   //==========================================
-
+  // MPI with different groups
   /*
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -194,6 +195,21 @@ int main(int argc, char **argv) {
 	// print help and exit for "-h"
 	if (argc == 2 && strncmp(argv[1], "-h", 2) == 0)  {
 	  cout << "See msj.cpp for arguments." << endl;
+
+	  MPI_Finalize();
+	  
+	  return 0;
+	}
+
+	// print help and exit for "-h"
+	if (argc == 3 && strncmp(argv[1], "-test", 10) == 0)  {
+	  
+	  //==========================================
+	  // Testing of individual classes only.
+  
+	  int testCase = atoi(argv[2]);
+	  mystable::tester(testCase);
+	  return 0;
 
 	  MPI_Finalize();
 	  
@@ -689,9 +705,10 @@ static void do_work_simple(double* work, double* result) {
 
   // starting index of innovation distribution's parameters
   int i0 = x.n_rows; //mygarch::getMessageSize(g);
+
   
   //
-  // 1 = skewed t, 2 = stdAS, 3 = CTS, 4 = NTS
+  // 1 = skewed t, 2 = stdAS
   //
   switch (innovType) {
   case 1:
@@ -705,15 +722,16 @@ static void do_work_simple(double* work, double* result) {
 	}
 	break;
   case 2:
-	{
+	{ 
 	  // convert GSL vector to ARMA vector
 	  vec gvec(g.u->size);
 	  for (int i = 0; i < g.u->size; i++)
 		gvec(i) = gsl_vector_get(g.u, i);
 	  
-	  mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::stdAS);
-	  result[i0]   = s.pars[0];
-	  result[i0+1] = s.pars[1];
+	  mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::symAS);
+	  result[i0]   = s.pars[0]; //alpha
+	  result[i0+1] = s.pars[1]; //sigma
+	  result[i0+2] = s.pars[2]; //mu
 	}
 	break;
   default:
@@ -734,111 +752,7 @@ static void do_work_simple(double* work, double* result) {
 
 static void do_work_copula(double* work, double* result) {
 
-  // set the returns vector, omitting the first size_pars elements
-  gsl_vector* retVec = gsl_vector_calloc(rows);
-  
-  for (int i = size_pars; i < size_work; i++)  {
-	gsl_vector_set(retVec, i-size_pars, work[i]);
-  }
-
-  garch_struct g;
-  
-  try {
-
-	// fit GARCH
-	g = mygarch::fit_nlopt(retVec, R, M, P, Q);
-
-  } catch (...) {
-
-	cout << "----> garchfit warning" << endl;
-	
-	IO::exportGslVector(retVec, "../data/bad_retVec.csv");
-	
-	// free returns vector
-	gsl_vector_free(retVec);
-
-	return;
-  }
-
-  // starting index of innovation distribution's parameters
-  int i0 = mygarch::getMessageSize(g);
-
-  // convert GSL vector to ARMA vector
-  vec gvec(g.u->size); 
-  for (int i = 0; i < g.u->size; i++)
-	gvec(i) = gsl_vector_get(g.u, i);
-
-  vec cdf(g.u->size);
-  
-  //
-  // 1 = skewed t, 2 = stdAS, 3 = CTS, 4 = NTS
-  //
-  switch (innovType) {
-  case 1:
-	{
-	  // fit skewed t to the residuals
-	  DistPars d = myskewt::fit_nlopt(g.u);
-	  result[i0]   = d.gamma;
-	  result[i0+1] = d.mu;
-	  result[i0+2] = d.df;
-	  result[i0+3] = d.sigma;
-
-	  // transform standardized residuals to copula space
-	  //cdf = myskewt::cdf(gvec, d.gamma, d.mu, d.df, d.sigma);
-	  assert(0 && "not implemented");
-	}
-	break;
-  case 2:
-	{
-	  mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::stdAS);
-	  result[i0]   = s.pars[0];
-	  result[i0+1] = s.pars[1];
-
-	  cdf = mystable::cdf_FFT(gvec, 2, s.pars, mystable::stdAS);
-	}
-	break;
-  case 3:
-	{
-	  mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::stdCTS);
-	  result[i0]   = s.pars[0];
-	  result[i0+1] = s.pars[1];
-	  result[i0+2] = s.pars[2];
-
-	  cdf = mystable::cdf_FFT(gvec, 3, s.pars, mystable::stdCTS);
-	}
-	break;	  
-  case 4:
-	{
-	  mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::stdNTS);
-	  result[i0]   = s.pars[0];
-	  result[i0+1] = s.pars[1];
-	  result[i0+2] = s.pars[2];
-
-	  cdf = mystable::cdf_FFT(gvec, 3, s.pars, mystable::stdNTS);
-	}
-	break;	  
-  default:
-	assert(0 && "Unknown dependence type");
-  }
-
-  // replace standardized residuals with cdf values
-  for (int i = 0; i < cdf.n_rows; i++) 
-	gsl_vector_set(g.u, i, cdf(i));
-	  
-  // convert structure to vector
-  vec x = mygarch::garch_struct_vec(g);
-
-  // set GARCH values to result
-  for (int i = 0; i < x.n_rows; i++)
-	result[i] = x(i);
-  
-  // free the GARCH structure
-  mygarch::garch_struct_free(g);
-  
-  // free returns vector
-  gsl_vector_free(retVec);
 }
-
 
 
 //-------------------------------------------------------------------------------
@@ -915,160 +829,129 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
 	assert(0 && "Unknown or unsupported dependence structure.");
   }
 
-  //-------------------------------------------------------------------------------
-  // MSST
-  //-------------------------------------------------------------------------------
-
   // Allocate matrix before starting MC timer, as this is used for LUT as well.
-  mat C(iS,iS);
-
-  // set vectors gamma and mu
-  int idxGamma = size_res - 4;
-  int idxMu = size_res - 3;
+  mat C(iS, iS);
+  mat resid(nSim, iS); // MC sampled GARCH residuals
+  vec nextMeans(iS);   // forecasted GARCH means
+  vec nextSigmas(iS);  // forecasted GARCH standard deviations
+  vec portRets(nSim);  // MC sampled portfolio returns
+  
+  switch (innovType) {
+  case 1:
+	{
+	  // set vectors gamma and mu
+	  int idxGamma = size_res - 4;
+	  int idxMu = size_res - 3;
 	
-  vec gamma = mnResults.row(idxGamma).t();
-  vec mu = mnResults.row(idxMu).t();
-  double df = 5.0;
+	  vec gamma = mnResults.row(idxGamma).t();
+	  vec mu = mnResults.row(idxMu).t();
+	  double df = 5.0;
   
-  // Scale gamma - necessary for keeping C positive definite.
-  gamma = gammaScale*gamma;
+	  // Scale gamma - necessary for keeping C positive definite.
+	  gamma = gammaScale*gamma;
   
-  // begin timing
-  rt.t_total_mc = MPI::Wtime();
-  rt.t_dep_est_mc = MPI::Wtime();
-  
-  // Compute sample covariance matrix  
-  // When dimension is near the number of samples, shrinkage required for a positive
-  // definite covariance matrix. 
+	  // begin timing
+	  rt.t_total_mc = MPI::Wtime();
 
-  //rt.t_shrink_mc = MPI::Wtime();
-  // use shrinkage estimator
-  C = Stats::cov2para(mnGarchRes, shrinkage);
-  //rt.t_shrink_mc = MPI::Wtime() - rt.t_shrink_mc;
+	  // estimate Sigma
+	  rt.t_dep_est_mc = MPI::Wtime();
+	  myskewt::estimateSigma(mnGarchRes, gamma, mu, df, doShrink, shrinkage, C);
+	  rt.t_dep_est_mc = MPI::Wtime() - rt.t_dep_est_mc; // stop the dep. est. timer
 
-  //mat C = mnCov*((df - 2.0)/df) - gamma*gamma.t() * (2.0*df)/((df - 2.0)*(df - 4.0));
-  C = C*((df - 2.0)/df) - gamma*gamma.t() * (2.0*df)/((df - 2.0)*(df - 4.0));
-  
-  // Adjust C to be positive definite
-  //t_adjust = MPI::Wtime();
+	  // cholesky
+	  rt.t_chol_mc = MPI::Wtime();
+	  C = chol(C);
+	  rt.t_chol_mc = MPI::Wtime() - rt.t_chol_mc;
 
-  if (doCheckEigs) {
-	vec eigval;
-	mat eigvec;
-	uvec idxNeg;
-	
-	// eigensystem for symmetric matrix, using faster divide and conquer ("dc") method
-	eig_sym(eigval, eigvec, C, "dc");
-	idxNeg = find(eigval < 0.0);
-	int iNeg = idxNeg.n_rows;
-  
-	if (verbose) {
-	  cout << "Number of negative eigenvalues before fix: " << iNeg << endl;
-	}
+	  // Forecast VaR with Monte Carlo (<TODO> time chol separately)
+	  rt.t_VaR_mc = MPI::Wtime(); 
+	  myskewt::portSample(nSim, gamma, mu, df, mnGarchPars, wts,
+							  C, resid, nextMeans, nextSigmas, portRets);
 
-	if (iNeg > 0) {
-	  // P*D*P'
-	  C = eigvec * diagmat(abs(eigval)) * eigvec.t();
-	  eig_sym(eigval, eigvec, C, "dc");
-	  idxNeg = find(eigval < 0.0);
+	  VaR_mc = Stats::quantile(portRets, VaR_epsilon);
 	  
-	  if (verbose) {
-		cout << "Number of negative eigenvalues after fix: " << idxNeg.n_rows << endl;
+	  rt.t_VaR_mc = MPI::Wtime() - rt.t_VaR_mc;
+
+	  // end total time for MC
+	  rt.t_total_mc = MPI::Wtime() - rt.t_total_mc;
+
+	  //
+	  // VaR with LUT method
+	  //
+	  // Technically we should add the time it took to compute nextSigmas and nextMeans (~0.6s),
+	  // plus the allocation of memory for matrix C, which we update in place below.
+	  //
+	  if (doLUT == false) {
+		break;
 	  }
+
+	  // begin total time for LUT
+	  rt.t_total_lut = MPI::Wtime();
+  
+	  // Calculate scaled covariance of residuals (these were nested with chol() call to save memory).
+	  //mat mnResScaled = mnGarchRes % repmat(nextSigmas.t(), mnGarchRes.n_rows, 1);
+	  //mat mnCov_lut = Stats::cov2para(mnResScaled, shrinkage);
+
+	  rt.t_dep_est_lut = MPI::Wtime();
+	  C = Stats::cov2para(mnGarchRes % repmat(nextSigmas.t(), mnGarchRes.n_rows, 1), shrinkage);
+	  rt.t_dep_est_lut = MPI::Wtime() - rt.t_dep_est_lut;
+	
+	  // time chol_lut
+	  rt.t_chol_lut = MPI::Wtime();
+	  C = chol(C);
+	  rt.t_chol_lut = MPI::Wtime() - rt.t_chol_lut;
+
+	  // time VaR_lut
+	  rt.t_VaR_lut = MPI::Wtime();
+
+	  C = C.t(); // transpose of chol() is reqiured (this isn't timed in chol())
+  
+	  // scale gamma by the GARCH forecasted stddevs
+	  vec gammaScaled = gamma % nextSigmas;
+  
+	  double fVaR;
+	  lut.lut_var(wts, gammaScaled, nextMeans, df, C, VaR_epsilon, VaR_lut, fVaR);
+
+	  rt.t_VaR_lut = MPI::Wtime() - rt.t_VaR_lut;
+	  rt.t_total_lut = MPI::Wtime() - rt.t_total_lut;
+  
 	}
-  }
- 
-  rt.t_dep_est_mc = MPI::Wtime() - rt.t_dep_est_mc; // stop the dep. est. timer
-  //rt.t_dep_est_lut = rt.t_dep_est_mc; // same time as for MC
-
-  // Compute MC cholesky factor.
-  rt.t_chol_mc = MPI::Wtime();
-  C = chol(C);
-  rt.t_chol_mc = MPI::Wtime() - rt.t_chol_mc; 
-
-  rt.t_VaR_mc = MPI::Wtime(); 
- 
-  mat resid;
-
-  // Simulate Monte Carlo sample from the multivariate residual distribution.
-  cout << "----> Simulating MVT...\n";
-  process_mem_usage();
-  resid = myskewt::mvskewtrnd_2(gamma, mu, df, nSim, C);
- 
-  // Forecast stock returns using ARMA-GARCH with copula residuals.
-  //mat stockRets(nSim, iS);
-  vec nextMeans(iS);
-  vec nextSigmas(iS);
-  
-  for (int i = 0; i < iS; i++) {
-
-	vec nxtRet(nSim);
-
-	mygarch::forecast_fromVec(mnGarchPars.col(i), resid.col(i),
-							  nxtRet, nextMeans(i), nextSigmas(i));
-
-	// Update resid in place with stockReturns.
-	//stockRets.col(i) = nxtRet;
-	resid.col(i) = nxtRet;
-  }
-
-  // portfolio returns for each path
-  vec portRets = resid*wts; //stockRets*wts;
-
-  // GSL quantile for VaR
-  gsl_vector* pr = gsl_vector_alloc(portRets.n_rows);
-
-  // <TODO> just get a pointer to portRets instead of memcopying
-  for (int i = 0; i < portRets.n_rows; i++)
-	gsl_vector_set(pr, i, portRets(i));
-
-  gsl_sort(pr->data, pr->stride, pr->size);
-  VaR_mc = gsl_stats_quantile_from_sorted_data(pr->data, pr->stride, pr->size, VaR_epsilon);
-  
-  gsl_vector_free(pr);
-
-  rt.t_VaR_mc = MPI::Wtime() - rt.t_VaR_mc;
-  rt.t_total_mc = MPI::Wtime() - rt.t_total_mc;
-  
-  //
-  // VaR with LUT method
-  //
-  // Technically we should add the time it took to compute nextSigmas and nextMeans (~0.6s),
-  // plus the allocation of memory for matrix C, which we update in place below.
-  //
-  
-  if (doLUT) {
+	break;
+  case 2:
+	{
+	  // set vectors gamma and mu
+	  int idxAlpha = size_res - 4;
+	  int idxSigma = size_res - 3;
+	  int idxMu = size_res - 2;
 	
-	rt.t_total_lut = MPI::Wtime();
-  
-	// Calculate scaled covariance of residuals (these were nested with chol() call to save memory).
-	//mat mnResScaled = mnGarchRes % repmat(nextSigmas.t(), mnGarchRes.n_rows, 1);
-	//mat mnCov_lut = Stats::cov2para(mnResScaled, shrinkage);
+	  vec alpha = mnResults.row(idxAlpha).t();
+	  vec sigma = mnResults.row(idxSigma).t();
+	  vec mu    = mnResults.row(idxMu).t();
 
-	rt.t_dep_est_lut = MPI::Wtime();
-	C = Stats::cov2para(mnGarchRes % repmat(nextSigmas.t(), mnGarchRes.n_rows, 1), shrinkage);
-	rt.t_dep_est_lut = MPI::Wtime() - rt.t_dep_est_lut;
-	
-	// time chol_lut
-	rt.t_chol_lut = MPI::Wtime();
-	C = chol(C);
-	rt.t_chol_lut = MPI::Wtime() - rt.t_chol_lut;
+	  // estimate scalar alpha
+	  double alphaHat = mystable::assg_alphaEst(alpha);
+	  
+	  // estimate matrix Sigma
+	  mystable::assg_dispersionEst(mnGarchRes, alphaHat, sigma, mu, C);
 
-	// time VaR_lut
-	rt.t_VaR_lut = MPI::Wtime();
+	  // cholesky
+	  C = chol(C);
 
-	C = C.t(); // transpose of chol() is reqiured (this isn't timed in chol())
-  
-	// scale gamma by the GARCH forecasted stddevs
-	vec gammaScaled = gamma % nextSigmas;
-  
-	double fVaR;
-	lut.lut_var(wts, gammaScaled, nextMeans, df, C, VaR_epsilon, VaR_lut, fVaR);
+	  // VaR MC
+	  mystable::portSample(nSim, alphaHat, mu, mnGarchPars, wts, C,
+						   resid, nextMeans, nextSigmas, portRets);
 
-	rt.t_VaR_lut = MPI::Wtime() - rt.t_VaR_lut;
-
-	rt.t_total_lut = MPI::Wtime() - rt.t_total_lut;
+	  VaR_mc = Stats::quantile(portRets, VaR_epsilon);
+	  
+	}
+	break;
+  default:
+	{
+	  assert(0 && "Unknown innovation type.");
+	}
+	break;
   }
+  
 
   return rt;
 }
@@ -1081,269 +964,6 @@ static RunTimes riskForecast_simple(double &VaR_mc, double &VaR_lut) {
 
 static void riskForecast_copula(double &VaR, double &CVaR) {
 
-
-  // check sizes
-  assert(size_res == mnResults.n_rows);
-  assert(cols == mnResults.n_cols);
-  //assert(cols == mnRet.n_cols);
-  assert(maxRMPQ > 0);
-
-  int iCoeffs = (int) mnResults(0,0);
-  int iNonCoeffs = mygarch::iNonCoeffs;
-  int i0 = iNonCoeffs + iCoeffs + 3*maxRMPQ;
-
-  mat mnGarchRes = zeros(iL, cols);
-  mat mnGarchPars = zeros(i0, cols);
-  
-  for (int i = 0; i < cols; i++) {
-	mnGarchRes.col(i) = mnResults(span(i0, size_res-4-1), i);
-	mnGarchPars.col(i) = mnResults(span(0, i0-1), i);
-  }	
-
-  //
-  // VaR with MC
-  //
-  
-  mat resid;
- 
-  if (depStruct == 1) {
-	
-	//-----
-	// MSST
-	//-----
-	
-	// Compute sample covariance matrix  
-	mat mnCov;
-  
-	// scarse data setting: dimension is near the number of samples
-	if (doShrink) {
-	
-	  // use shrinkage estimator
-	  double shrinkage = 0.0;
-	  mnCov = Stats::cov2para(mnGarchRes, shrinkage);
-
-	  if (verbose) {
-		cout << "----> Using shrunken covariance with shrinkage = " << shrinkage << endl;
-	  }
-	
-	} else {
-
-	  // use sample covariance
-	  mnCov = cov(mnGarchRes);
-
-	  if (verbose) {
-		cout << "Using sample covariance" << endl;
-	  }
-	}
-
-	// set vectors gamma and mu
-	int idxGamma = size_res - 4;
-	int idxMu = size_res - 3;
-	
-	vec gamma = mnResults.row(idxGamma).t();
-	vec mu = mnResults.row(idxMu).t();
-	double df = 5.0;
-  
-	// Scale gamma - necessary for keeping C positive definite.
-	gamma = gammaScale*gamma;
-  
-	mat C  = mnCov*((df - 2.0)/df) - gamma*gamma.t() * (2.0*df)/((df - 2.0)*(df - 4.0));
-  
-	// Adjust C to be positive definite
-	//t_adjust = MPI::Wtime();
-
-	if (doCheckEigs) {
-	  vec eigval;
-	  mat eigvec;
-	  uvec idxNeg;
-	
-	  // eigensystem for symmetric matrix, using faster divide and conquer ('"dc") method
-	  eig_sym(eigval, eigvec, C, "dc");
-	  idxNeg = find(eigval < 0.0);
-	  int iNeg = idxNeg.n_rows;
-  
-	  if (verbose) {
-		cout << "Number of negative eigenvalues before fix: " << iNeg << endl;
-	  }
-
-	  if (iNeg > 0) {
-		// P*D*P'
-		C = eigvec * diagmat(abs(eigval)) * eigvec.t();
-		eig_sym(eigval, eigvec, C, "dc");
-		idxNeg = find(eigval < 0.0);
-	  
-		if (verbose) {
-		  cout << "Number of negative eigenvalues after fix: " << idxNeg.n_rows << endl;
-		}
-	  }
-	}
-  
-	//t_adjust = MPI::Wtime() - t_adjust;
-	//t_sample = MPI::Wtime();
-  
-	// simulate Monte Carlo sample from the multivariate residual distribution
-	resid = myskewt::mvskewtrnd_1(gamma, mu, df, C, nSim);
-
-	//t_sample = MPI::Wtime() - t_sample;
-	
-  } else if (depStruct == 2) {
-	
-	//-------------------------------------------------------------------------------
-	// ASSG
-	//-------------------------------------------------------------------------------
-
-	assert(0 && "Implemenation Not Finished");
-
-	// set vectors gamma and mu
-	int idxAlpha = size_res - 4;
-	int idxSigma = size_res - 3;
-	int idxMu = size_res - 2;
-
-	vec alpha = mnResults.row(idxAlpha).t();
-	vec sigma = mnResults.row(idxSigma).t();
-	vec mu    = mnResults.row(idxMu).t();
-
-	// estimate scalar alpha
-	double alphaHat = mystable::assg_alphaEst(alpha);
-
-	// estimate matrix Sigma
-	mat SigmaHat = mystable::assg_dispersionEst(mnGarchRes, alphaHat, sigma, mu);
-	
-	// Adjust C to be positive definite
-	//t_adjust = MPI::Wtime();
-
-	if (doCheckEigs) {
-	  vec eigval;
-	  mat eigvec;
-	  uvec idxNeg;
-	
-	  // eigensystem (symmetric)
-	  eig_sym(eigval, eigvec, SigmaHat, "dc");
-	  idxNeg = find(eigval < 0.0);
-	  int iNeg = idxNeg.n_rows;
-  
-	  if (verbose) {
-		cout << "Number of negative eigenvalues before fix: " << iNeg << endl;
-	  }
-
-	  if (iNeg > 0) {
-		// P*D*P'
-		SigmaHat = eigvec * diagmat(abs(eigval)) * eigvec.t();
-		eig_sym(eigval, eigvec, SigmaHat, "dc");
-		idxNeg = find(eigval < 0.0);
-	  
-		if (verbose) {
-		  cout << "Number of negative eigenvalues after fix: " << idxNeg.n_rows << endl;
-		}
-	  }
-	}
-  
-	//<TODO> sample from ASSG
-	
-  } else {
-	assert(0 && "Unknown dependence structure.");
-  }
-
-  // Transform simulated values into copula space
-
-  for (int i = 0; i < resid.n_cols; i++) {
-	vec x0 = resid.col(i);
-	vec x1 = zeros(nSim);
-	vec Fx = zeros(nSim);
-
-	Stats::empCDF_fast(x0, x1, Fx);
-
-	// truncate CDF values
-	uvec idx = find(Fx < cdfTol);
-	Fx.elem(idx) = cdfTol * ones(idx.n_rows);
-	
-	idx = find(Fx > 1.0-cdfTol);
-	Fx.elem(idx) = (1.0-cdfTol) * ones(idx.n_rows);
-	
-	// keep CDF within (0,1)
-	// Fx = min(Fx, 1.0 - cdfTol);
-	// Fx = max(Fx, cdfTol);
-
-	//cout << "size(Fx): " << Fx.n_rows << endl;
-	
-	resid.col(i) = Fx;
-  }
-
-  // get innovation distribution
-  int nparam;
-  mystable::dist dist;
-  	
-  switch (innovType) {
-  case 1:
-	{
-	  assert(0 && "not implemented");
-	}
-	break;
-  case 2:
-	{
-	  dist = mystable::stdAS;
-	}
-	break;
-  case 3:
-	{
-	  dist = mystable::stdCTS;
-	}
-	break;	  
-  case 4:
-	{
-	  dist = mystable::stdNTS;
-	}
-	break;	  
-  default:
-	assert(0 && "Unknown dependence type");
-  }
-
-  // get parameter count
-  nparam = mystable::getParCount(dist);
-  vec param(nparam);
-  vec icdf(nSim);
-  int i00 = size_res - 4; // starting index of innovation paramters
-
-  // forecast stock returns using ARMA-GARCH with copula residuals
-  mat stockRets(nSim, iS);
-  
-  for (int i = 0; i < iS; i++) {
-	
-	param = mnResults(span(i00, i00 + nparam - 1), i);
-
-	/*
-	  cout << ">> Stock " << i << ": " << mystable::dist2str(dist) << endl;
-	  param.print("param = ");
-	  vec arg = resid.col(i);
-	  arg.save("e_res.csv", csv_ascii);
-	*/
-	
-	icdf = mystable::inv_FFT(resid.col(i), nparam, param.memptr(), dist);
-	
-	// GARCH return forecast
-	//stockRets.col(i) = mygarch::forecast(gs[i], resid.col(i));
-	//stockRets.col(i) = mygarch::forecast_fromVec(mnGarchPars.col(i), resid.col(i));
-	
-	//stockRets.col(i) = mygarch::forecast_fromVec(mnGarchPars.col(i), icdf);
-	assert(0 && "Uncomment the above line first and update it for new method format.");
-	
-  }
-
-  // portfolio returns for each path
-  vec portRets = stockRets*wts;
-
-  // GSL quantile for VaR
-  gsl_vector* pr = gsl_vector_alloc(portRets.n_rows);
-
-  // <TODO> just get a pointer to portRets instead of memcopying
-  for (int i = 0; i < portRets.n_rows; i++)
-	gsl_vector_set(pr, i, portRets(i));
-
-  gsl_sort(pr->data, pr->stride, pr->size);
-  VaR = gsl_stats_quantile_from_sorted_data(pr->data, pr->stride, pr->size, VaR_epsilon);
-
-  gsl_vector_free(pr);
- 
 }
 
 

@@ -387,8 +387,6 @@ DistPars myskewt::skewedstudenttfit_bfgs(START_TYPE startType, gsl_vector *y) {
 }
 
 
-
-
 //******************************************************************************
 // Nelder-Mead Simplex (Gradient-free) - GSL
 //******************************************************************************
@@ -478,13 +476,6 @@ DistPars myskewt::skewedstudenttfit_nmsimplex(START_TYPE startType, gsl_vector *
 }
 
 
-
-
-
-
-
-
-
 //-------------------------------------------------------------------------------
 // Called to get negative log likelihood
 
@@ -523,6 +514,9 @@ double myskewt::negLLF_nlopt(unsigned n, const double *x, double *grad, void *pa
 
   return negLL;
 }
+
+
+//-------------------------------------------------------------------------------
 
 double myskewt::negLLF_nlopt_std(unsigned n, const double *x, double *grad, void *params) {
 
@@ -633,6 +627,8 @@ DistPars myskewt::fit_nlopt(gsl_vector *y) {
 }
 
 
+//-------------------------------------------------------------------------------
+
 void myskewt::std_pars(double gamma, double df, double &mu, double &sigma) {
 
   mu = -1.0*(df/(df - 2.0))*gamma;
@@ -640,6 +636,8 @@ void myskewt::std_pars(double gamma, double df, double &mu, double &sigma) {
   
 }
 
+
+//-------------------------------------------------------------------------------
 
 DistPars myskewt::fit_nlopt_std(gsl_vector *y) {
 
@@ -774,6 +772,9 @@ mat myskewt::mvskewtrnd_2(vec gamma, vec mu, double df, int nSim, mat A) {
 }
 */
 
+
+//-------------------------------------------------------------------------------
+
 mat myskewt::mvskewtrnd_2(vec gamma, vec mu, double df, int nSim, mat A) {
 
   int nVars = gamma.n_rows;
@@ -837,46 +838,119 @@ void myskewt::mvskewtrnd_test() {
 //-------------------------------------------------------------------------------
 // CDF for skewed t
 
-// vec myskewt::cdf(vec X, double gamma, double mu, double df, double sigma) {
-
-//   mat sample = myskewt::skewtrnd(1.0e6, 1, gamma, mu, df, sigma);
-
-//   return Stats::empCDF(sample.col(0), X);
-// }
+vec myskewt::cdf(vec x, int iSamp, double gamma, double mu, double df, double sigma) {
+  
+  mat sample = myskewt::skewtrnd(iSamp, 1, gamma, mu, df, sigma);
+  
+  return Stats::empCDF(sample.col(0), x);
+  
+}
 
 //-------------------------------------------------------------------------------
 // Inverse CDF for skewed t
 
-// vec myskewt::inv_cdf(vec u, double gamma, double mu, double df, double sigma) {
+// THIS ISN'T WORKING - I think emp_CDF call needs to sort cdfi.
 
-//   int iN = 1.0e2;
+vec myskewt::inv_cdf(vec pvalues, int iN, double gamma, double mu, double df, double sigma) {
+
+  mat sample = myskewt::skewtrnd(iN, 1, gamma, mu, df, sigma);  
+  vec q(pvalues.n_rows);
+  vec x(iN);
+  vec cdfi(iN);
+  Stats::empCDF_fast(sample.col(0), x, cdfi); // problem
+
+  // tail cropping tolerance
+  double tol = 1.0e-6;
+
+  cdfi.save("/Users/jimmiegoode/Documents/Glimm/Toolbox/Copulas/e_cdf_pre.csv", csv_ascii);
+  x.save("/Users/jimmiegoode/Documents/Glimm/Toolbox/Copulas/e_x_pre.csv", csv_ascii);
   
-//   mat sample = myskewt::skewtrnd(iN, 1, gamma, mu, df, sigma);  
-//   vec P(u.n_rows); 
-//   vec x(iN);
-//   vec F(iN);
-//   Stats::empCDF_fast(sample.col(0), x, F);
-
-//   cout << "saving data...\n";
-//   F.save("/Users/jimmiegoode/Desktop/e_x.csv", csv_ascii);
-//   x.save("/Users/jimmiegoode/Desktop/e_F.csv", csv_ascii);
+   // force CDF to be monotonic
+  Stats::cleanupCDF(x, cdfi, tol);
   
-//   gsl_interp_accel *acc = gsl_interp_accel_alloc();
-//   gsl_interp* interp = gsl_interp_alloc(gsl_interp_linear, iN);
-//   gsl_interp_init(interp, F.memptr(), x.memptr(), iN);
+  double xMax = max(x);
+  double xMin = min(x);
+  double cdfMin = min(cdfi);
+  double cdfMax = max(cdfi);
   
-//   for (int i = 0; i < u.n_rows; i++) {
-// 	P(i) = gsl_interp_eval(interp, F.memptr(), x.memptr(), u(i), acc);
-//   }
+  gsl_interp_accel *acc = gsl_interp_accel_alloc();
+  gsl_interp* interp = gsl_interp_alloc(gsl_interp_linear, iN);
+  gsl_interp_init(interp, cdfi.memptr(), x.memptr(), iN);
 
-//   gsl_interp_accel_free(acc);
-//   gsl_interp_free(interp);
+  /*
+  for (int i = 0; i < pvalues.n_rows; i++) {
+	if (pvalues(i) >= cdfMax)
+	  q(i) = xMax;
+	else if (pvalues(i) <= cdfMin)
+	  q(i) = xMin;
+	else
+	  q(i) = gsl_interp_eval(interp, cdfi.memptr(), x.memptr(), pvalues(i), acc);
+  }
+  */
+  gsl_interp_accel_free(acc);
+  gsl_interp_free(interp);
 
-//   return P;
-// }
+  return q;
+}
 
+//-------------------------------------------------------------------------------
+// Estimates the matrix Sigma in the stochastic form for t_d.
 
+void myskewt::estimateSigma(const mat sample,
+							const vec gamma,
+							const vec mu,
+							const double df,
+							const bool doShrink,
+							double &shrinkage,
+							mat &C) {
 
+  // Shrink the covariance
+  shrinkage = -1;
+
+  if (doShrink) {
+	C = Stats::cov2para(sample, shrinkage);
+  }
+
+  C = C*((df - 2.0)/df) - gamma*gamma.t() * (2.0*df)/((df - 2.0)*(df - 4.0));
+  
+}
+
+//-------------------------------------------------------------------------------
+// NOTE: This updates resid in place with GARCH filtered returns.
+
+void myskewt::portSample(const int nSim,
+							 const vec gamma,
+							 const vec mu,
+							 const double df,
+							 const mat mnGarchPars,
+							 const vec wts,
+							 const mat A,
+							 mat &resid,
+							 vec &nextMeans,
+							 vec &nextSigmas,
+							 vec &portRets) {
+
+  // number of stocks
+  int iS = gamma.n_rows;
+  
+  resid = myskewt::mvskewtrnd_2(gamma, mu, df, nSim, A);
+
+  for (int i = 0; i < iS; i++) {
+
+	vec nxtRet(nSim);
+
+	mygarch::forecast_fromVec(mnGarchPars.col(i), resid.col(i),
+							  nxtRet, nextMeans(i), nextSigmas(i));
+
+	// Update resid in place with returns.
+	resid.col(i) = nxtRet;
+  }
+
+  // portfolio returns for each path
+  portRets = resid*wts;
+
+}
+  
 
 //-------------------------------------------------------------------------------
 
@@ -918,28 +992,38 @@ void myskewt::tester(int c) {
 
   case 2:
 	{
-	  // vec X = linspace(-5.,5,1000);
-	  // vec cdf = myskewt::cdf(X, -1., 0., 5.0, 1.);
-	  // cdf.save("/Users/jimmiegoode/Documents/Glimm/skewt_vs_ASSG/e_cdft.csv", csv_ascii);
+	  cout << "\n CDF \n";
+	  
+	  vec x = linspace(-20., 20., 1000);
+	  vec cdf = myskewt::cdf(x, 1.e6, -1., 0., 5.0, 1.);
+	  cdf.save("/Users/jimmiegoode/Documents/Glimm/Toolbox/Copulas/e_cdf.csv", csv_ascii);
+
+	  //vec myskewt::inv_cdf(vec pvalues, int iN, double gamma, double mu, double df, double sigma) {
+
+	  cout << "\n INV \n";
+	  
+	  vec pvalues = linspace(0., 1., 1000);
+	  vec inv = myskewt::inv_cdf(pvalues, 1.e6, -1., 0., 5.0, 1.);
+	  inv.save("/Users/jimmiegoode/Documents/Glimm/Toolbox/Copulas/e_inv.csv", csv_ascii);
 	}
 	break;
 	
   } //switch
 }
 
-/*
+
 //-------------------------------------------------------------------------------
 // <main>
 
-int main(int argc, char** argv) {
+// int main(int argc, char** argv) {
   
-  if (argc < 2)
-	assert(0 && "Invalid Arguments");
+//   if (argc < 2)
+// 	assert(0 && "Invalid Arguments");
   
-  int testCase = atoi(argv[1]);
+//   int testCase = atoi(argv[1]);
 
-  myskewt::tester(testCase);
+//   myskewt::tester(testCase);
   
-  return 0;
-}
-*/
+//   return 0;
+// }
+

@@ -48,7 +48,7 @@ void skeweduvstudenttpdf(gsl_vector* logPDF,const gsl_vector* X,
 		gsl_vector_set(bessel_arg, jj, pow( (df + gsl_vector_get(Rho, jj) )* (pow(gamma,2))/(pow(sigma,2))  ,0.5) );
 		gsl_vector_set(logPDF, jj, (log(2) + ( df / 2)*log(pi* df) - log(gammafun( df/2 ))-log(sigma)
 								  + log(exp(  gsl_vector_get(bessel_arg, jj) )
-								  *boost::math::cyl_bessel_k( ((df+1)/2),gsl_vector_get(bessel_arg, jj)  )  ) 
+										*boost::math::cyl_bessel_k( ((df+1)/2), gsl_vector_get(bessel_arg, jj)  )  )
 								  -gsl_vector_get(bessel_arg, jj) + ( ( gsl_vector_get(X, jj) - mu)*gamma / pow(sigma,2))
 								  - ((df+1)/2) * log((( 1+ gsl_vector_get(Rho, jj) / df) * (2*pi*df) ) / gsl_vector_get(bessel_arg, jj))));
 	}
