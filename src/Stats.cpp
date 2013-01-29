@@ -213,6 +213,21 @@ double Stats::tinv(const double p, const double nu) {
   return gsl_cdf_tdist_Pinv(p, nu);
 }
 
+
+//-------------------------------------------------------------------------------
+// Uniform random deviates on [0,1]
+
+mat Stats::rand(int nRows, int nCols) {
+
+  mat samp(nRows, nCols);
+
+  for (int i = 0; i < nRows; i++)
+	for (int j = 0; j < nCols; j++)
+	  samp(i,j) = gsl_ran_flat(Stats::rng, 0, 1);
+
+  return samp;
+}
+
 //-------------------------------------------------------------------------------
 // Gaussian random variate with mean mu and standard deviation sigma.
 
@@ -680,6 +695,25 @@ vec Stats::ksdensity(vec xi, vec x) {
   return f; 
 }
 
+//-------------------------------------------------------------------------------
+// Quantile of data using GSL
+
+double Stats::quantile(vec x, double epsilon) {
+
+  // <TODO> just get a pointer instead of memcopying
+  gsl_vector* pr = gsl_vector_alloc(x.n_rows);
+  for (int i = 0; i < x.n_rows; i++)
+	gsl_vector_set(pr, i, x(i));
+
+  // Expensive step
+  gsl_sort(pr->data, pr->stride, pr->size);
+
+  double quantile = gsl_stats_quantile_from_sorted_data(pr->data, pr->stride, pr->size, epsilon);
+  
+  gsl_vector_free(pr);
+
+  return quantile;
+}
 
 //-------------------------------------------------------------------------------
 

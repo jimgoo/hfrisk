@@ -156,6 +156,45 @@ cx_vec chf_stdAS(vec u, double alpha, double beta) {
 
 
 //-------------------------------------------------------------------------------
+// Generalized Hyperbolic CHF
+// SOURCE: Page 125, Financial Modelling With Jump Processes Cont and Tankov, 2004, 1st. ed)
+
+//
+// THE PROBLEM: complex bessel function argument not supported by Boost.
+//
+
+// cx_vec besselk(double order, cx_vec u) {
+
+//   cx_vec out(u.n_rows);
+
+//   complex<double> val(2.,2.);
+//   //boost::math::complex<double> val(2.,2.);
+//   //boost::math::cyl_bessel_k(order, val);
+//   //boost::complex z3(1., 2.);
+  
+//   // for (int i = 0; i < u.n_rows; i++) {
+//   //   complex<double> val(arma::real(u(i)), arma::imag(u(i)));
+//   // 	out(i) = boost::math::cyl_bessel_k(order, val);
+//   // }
+//   return out;
+// }
+
+
+// cx_vec chf_GH(vec u, double lambda, double alpha, double beta, double delta, double mu) {
+
+//   cx_vec tmp = arma::pow(beta + onei*u, 2.);
+//   //(besselk(lambda, delta * arma::pow(lambda*lambda - tmp, 0.5)) /
+  
+//   cx_vec phi = arma::exp(onei*u*mu) *
+// 	arma::pow((alpha*alpha - beta*beta)/(alpha*alpha - tmp), lambda/2.) *
+// 	(besselk(lambda, tmp))/
+// 	  boost::math::cyl_bessel_k(lambda, delta * std::pow(alpha*alpha - beta*beta, 0.5)));
+
+//   return phi;
+// }
+
+
+//-------------------------------------------------------------------------------
 //
 
 void pdf_FFT(const int narg, const int nparam,
@@ -215,6 +254,14 @@ void pdf_FFT(const int narg, const int nparam,
 	  double beta  = param[1];
 	  double sigma = param[2];
 	  double mu    = param[3];
+
+	  /*
+	  cout << "----> alpha = " << alpha << ", " 
+		   << "beta = " << beta << ", "
+		   << "sigma = " << sigma << ", "
+		   << "mu = " << mu << endl;
+	  */
+	  
 	  cfvalues = chf_AS(t2, alpha, beta, sigma, mu);
 	}
 	break;
@@ -292,11 +339,7 @@ void pdf_FFT(const int narg, const int nparam,
 }
 
 //-------------------------------------------------------------------------------
-/*
-  void pdf_FFT(const int narg, const int nparam,
-  double arg[], const double param[],
-  mystable::dist dist, vec &f, vec &x, vec &pdf)
-*/
+
 vec mystable::cdf_FFT(vec arg, const int nparam, const double param[],
 			mystable::dist dist) {
 
@@ -412,7 +455,6 @@ vec mystable::inv_FFT(vec pvalues, const int nparam, const double param[],
   
   gsl_interp_accel *acc = gsl_interp_accel_alloc();
   gsl_interp* interp = gsl_interp_alloc(gsl_interp_linear, iN);
-
   gsl_interp_init(interp, cdfi.memptr(), x.memptr(), iN);
 
   double xMax = max(x);
@@ -421,16 +463,18 @@ vec mystable::inv_FFT(vec pvalues, const int nparam, const double param[],
   double cdfMax = max(cdfi);
   
   for (int i = 0; i < narg; i++) {
-	
-	//cout << "pvalues(" << i << ") = " << pvalues(i)
-	//	 << ", max(cdf) = " << max(cdfi) << ", min(cdf) = " << min(cdfi) << endl;
-
+   
 	if (pvalues(i) >= cdfMax)
 	  q(i) = xMax;
 	else if (pvalues(i) <= cdfMin)
 	  q(i) = xMin;
 	else
 	  q(i) = gsl_interp_eval(interp, cdfi.memptr(), x.memptr(), pvalues(i), acc);
+
+	if (gsl_finite(q(i)) != 1)
+	  cout << "F_inv(" << pvalues(i) << ") = " << q(i) 
+		   << ", max(cdf) = " << cdfMin << ", min(cdf) = " << cdfMax << endl;
+
   }
   
   gsl_interp_accel_free(acc);
@@ -518,6 +562,8 @@ int mystable::getParCount(mystable::dist dist) {
 	return 2;
   case mystable::symAS:
 	return 3;
+  case mystable::AS:
+	return 4;
   default:
 	assert(0 && "bad dist");
   }
@@ -537,6 +583,8 @@ string mystable::dist2str(mystable::dist dist) {
 	return "stdAS";
   case mystable::symAS:
 	return "symAS";
+  case mystable::AS:
+	return "AS";
   default:
 	assert(0 && "bad dist");
   }
@@ -611,6 +659,24 @@ void getInitialPars(const int n, vector<double> &x,
 	  ub[2] = HUGE_VAL;
 	}
 	break;
+	case mystable::AS:
+	  {
+		x[0] = 1.5; // alpha
+		x[1] = 0.0; // beta
+		x[2] = 1.0; // sigma
+		x[3] = 0.0; // mu
+
+		lb[0] =  0.0 + tol;
+		lb[1] = -1.0 + tol;
+		lb[2] = -HUGE_VAL;
+		lb[3] = -HUGE_VAL;
+
+		ub[0] = 2.0 - tol;
+		ub[1] = 1.0 + tol;
+		ub[2] = HUGE_VAL;
+		ub[3] = HUGE_VAL;
+	  }
+	  break;
   default:
 	assert(0 && "bad dist");
   }
@@ -703,7 +769,7 @@ void ts_struct_free(mystable::ts_struct s) {
 }
 
 //-------------------------------------------------------------------------------
-// ASSG global alpha parameter
+// Alpha-stable sub-Gaussian (ASSG) global alpha parameter
 
 double mystable::assg_alphaEst(vec alpha) {
   return mean(alpha);
@@ -730,16 +796,15 @@ double mystable::assg_scaleEst(mat X, double alpha, vec mu, vec a) {
 }
 
 
-
 //-------------------------------------------------------------------------------
 // ASSG dispersion matrix estimator
 
-mat mystable::assg_dispersionEst(mat X, double alpha, vec sigma, vec mu) {
+void mystable::assg_dispersionEst(mat X, double alpha, vec sigma, vec mu, mat &Sigma) {
 
   assert(sigma.n_rows == mu.n_rows);
   const int n = mu.n_rows;
   
-  mat Sigma(n,n);
+  //mat Sigma(n,n);
 
   // set main and upper diagonal
   for (int i = 0; i < n; i++) {
@@ -747,7 +812,6 @@ mat mystable::assg_dispersionEst(mat X, double alpha, vec sigma, vec mu) {
 	  if (i == j) {
 		Sigma(i,i) = 2.0*sigma(i)*sigma(i);
 	  } else {
-		
 		vec a = zeros(n);
 		a(i) = 1.0;
 		a(j) = 1.0;
@@ -765,41 +829,181 @@ mat mystable::assg_dispersionEst(mat X, double alpha, vec sigma, vec mu) {
   for (int i = 1; i < n; i++)
 	for (int j = 0; j < i; j++)
 	  Sigma(i,j) = Sigma(j,i);
-  
-  return Sigma;
 }
+
+
+//-------------------------------------------------------------------------------
+//  RNG of stable and TS variables.
+
+mat mystable::stablernd(const int nparam, const double param[], mystable::dist dist,
+						int m, int n) {
+
+  /*
+  // random uniforms
+  vec u(iRows*iCols);
+  u.randu();
+
+  u.save("/Users/jimmiegoode/Documents/Glimm/Toolbox/alphastable/testing/e_u.csv", csv_ascii);
+
+  vec inv = mystable::inv_FFT(u, nparam, param, dist);
+
+  inv.save("/Users/jimmiegoode/Documents/Glimm/Toolbox/alphastable/testing/e_inv.csv", csv_ascii);
+ 
+  mat out = reshape(inv, iRows, iCols);
+
+  return out; 
+  */
+
+  mat x(m, n);
+
+  //double pi = M_PI;
+  
+  switch (dist) {
+  case mystable::AS:
+	{
+	  double alpha = param[0];
+	  double beta = param[1];
+	  double c = param[2];
+	  double delta = param[3];
+	  
+	  mat w = -1.0 * arma::log(Stats::rand(m,n));
+	  mat phi = (Stats::rand(m,n)-.5)*M_PI;
+
+	  if (alpha == 2.) {
+		x = (2.*arma::sqrt(w) % arma::sin(phi));
+		x = delta + c*x;
+		return x;
+	  }
+
+	  // Symmetric cases:
+	  if (beta == 0.) {
+		if (alpha == 1.) { // Cauchy case 
+		  x = arma::tan(phi);
+		} else {
+		  x = ( pow((cos((1.-alpha)*phi) / w), (1./alpha - 1.)) 
+				% sin(alpha * phi) / pow(cos(phi), (1./alpha)));
+		}
+
+	  // General cases:
+	  } else {
+
+		mat cosphi = cos(phi);
+
+		if (abs(alpha-1) > 1.e-8) {
+
+		  double zeta = beta * tan(M_PI*alpha/2.);
+		  mat aphi = alpha * phi;
+		  mat a1phi = (1. - alpha) * phi;
+
+		  x = ((sin(aphi) + zeta * cos(aphi)) / cosphi) 
+            % arma::pow(((cos(a1phi) + zeta * sin(a1phi)) / (w % cosphi)), ((1.-alpha)/alpha));
+		  
+		} else {
+		  
+		  mat bphi = (M_PI/2.) + beta * phi;
+
+		  x = (2./M_PI) * (bphi % tan(phi) - beta * log((M_PI/2.) * w % cosphi / bphi));
+
+		  if (alpha != 1.) {
+            x = x + beta * tan(M_PI * alpha/2.);
+		  }
+		}			
+	  }
+
+	  // Finale:
+	  x = delta + c * x;
+	  return x;
+	  
+	}
+	break;
+  default:
+	assert(0 && "RNG for dist not implemented");
+  }
+}
+
+//-------------------------------------------------------------------------------
+
 
 
 //-------------------------------------------------------------------------------
 // ASSG sample
-/*
+
 mat mystable::assg_rnd(double alpha, mat Sigma, vec mu, int nSim) {
 
+  // check dimensions
   assert(Sigma.n_rows == Sigma.n_cols);
   assert(Sigma.n_rows == mu.n_rows);
 
-  int n = mu.n_rows;;
-  
-  mat Z = Stats::mvnrnd(zeros(n), Sigma, nSim);
+  int iCols = mu.n_rows;
 
-  // <TODO> stablernd
+  double param[] = {alpha/2., 1., pow(cos(M_PI*alpha/4.), 2./alpha), 0.};
+
+  mat W = mystable::stablernd(4, param, mystable::AS, nSim, iCols);
+
+  return repmat(mu.t(), nSim, 1) +
+	arma::sqrt(W) % Stats::mvnrnd(arma::zeros(iCols), Sigma, nSim);
+}
+
+//-------------------------------------------------------------------------------
+// ASSG sample - Cholesky factor A supplied
+
+mat mystable::assg_rnd_2(double alpha, mat A, vec mu, int nSim) {
+
+  // check dimensions
+  assert(A.n_rows == A.n_cols);
+  assert(A.n_rows == mu.n_rows);
+
+  int iCols = mu.n_rows;
+
+  double param[] = {alpha/2., 1., pow(cos(M_PI*alpha/4.), 2./alpha), 0.};
+
+  mat W = mystable::stablernd(4, param, mystable::AS, nSim, iCols);
+
+  return repmat(mu.t(), nSim, 1) +
+	arma::sqrt(W) % Stats::mvnrnd_2(arma::zeros(iCols), nSim, A);
+}
+
+
+
+//-------------------------------------------------------------------------------
+// NOTE: This updates resid in place with GARCH filtered returns.
+
+void mystable::portSample(const int nSim,
+						  const double alpha,
+						  const vec mu,
+						  const mat mnGarchPars,
+						  const vec wts,
+						  const mat A, // A is chol(Sigma)
+						  mat &resid,
+						  vec &nextMeans,
+						  vec &nextSigmas,
+						  vec &portRets) {
+
+  // number of stocks
+  int iS = mu.n_rows;
+
+  resid = mystable::assg_rnd_2(alpha, A, mu, nSim);
+
+  for (int i = 0; i < iS; i++) {
+
+	vec nxtRet(nSim);
+
+	mygarch::forecast_fromVec(mnGarchPars.col(i), resid.col(i),
+							  nxtRet, nextMeans(i), nextSigmas(i));
+
+	// Update resid in place with returns.
+	resid.col(i) = nxtRet;
+  }
+
+  // portfolio returns for each path
+  portRets = resid*wts;
 
 }
 
-mpirun -np 128 -x OMP_NUM_THREADS ./tester -df ../data/csi_20030101_20120801_v3 -mc 5 -maxT 1009 -nSims 10000 -v 0 -rf ../data/exports/20121020/innovType=1/n=1000 -margOnly 0 -innovType 2 -depStruct 1
-
-*/
-
 
 //-------------------------------------------------------------------------------
 
-
-
-
-
-//-------------------------------------------------------------------------------
-
-void tester(int c) {
+void mystable::tester(int c) {
 
   cout << ">> Testing mystable.cpp (Case " << c << ")" << endl;
   
@@ -965,8 +1169,6 @@ void tester(int c) {
 	break;
   case 10:
 	{
-	  //assg_sigmaEst(mat X, vec alpha, vec sigma, vec mu)
-
 	  mat X;
 	  X.load("/Users/jimmiegoode/Documents/PhD/Matlab/ASSG/rand_ASSG.csv", csv_ascii);
 
@@ -986,7 +1188,8 @@ void tester(int c) {
 	  }
 	  
 	  double nalpha = mean(alpha);
-	  mat SigmaHat = mystable::assg_dispersionEst(X, nalpha, sigma, mu);
+	  mat SigmaHat(n,n);
+	  mystable::assg_dispersionEst(X, nalpha, sigma, mu, SigmaHat);
 
 	  cout << "alpha = " << nalpha << endl;
 	  mu.print("mu = ");
@@ -1021,10 +1224,8 @@ void tester(int c) {
 	  doPrintBounds = 0;
 
 	  vec X;
-	  //X.load("/Users/jimmiegoode/Documents/Glimm/data/scalingSeries/1.csv", csv_ascii);
 	  X.load("/Users/jimmiegoode/Documents/Glimm/Toolbox/alphastable/testing/rnd_stdAS.csv", csv_ascii);
-
-	  string fout = "";
+	  string fout = "/Users/jimmiegoode/Documents/Glimm/Toolbox/alphastable/testing/";
 
 	  vec u = linspace(-10., 10., 1000);
 	  vec p = linspace(0.01, 0.99, 1000);
@@ -1038,8 +1239,11 @@ void tester(int c) {
 	  dists.push_back(mystable::stdAS);
 	  dists.push_back(mystable::stdCTS);
 	  dists.push_back(mystable::stdNTS);
+	  dists.push_back(mystable::AS);
+	  dists.push_back(mystable::symAS);
 
-	  for (int i = 0; i < dists.size(); i++) {
+	  for (int i = 0; i < dists.size(); i++)
+	  {	
 		dist = dists[i];
 		string sDist = mystable::dist2str(dist);
 		npars = mystable::getParCount(dist);
@@ -1060,10 +1264,8 @@ void tester(int c) {
 		vec x(iN);
 		vec pdf(iN);
 		pdf_FFT(u.n_rows, npars, u.memptr(), s.pars, dist, f, x, pdf);
-		f.save(fout + "e_f_" + sDist + ".csv", csv_ascii);
-		
+		f.save(fout + "e_f_" + sDist + ".csv", csv_ascii);	
 	  }
-	  
 	}
 	break;
 	
@@ -1080,24 +1282,99 @@ void tester(int c) {
 	  vec icdf = mystable::inv_FFT(arg, 3, param.memptr(), mystable::stdCTS);
 
 	  icdf.save("e_icdf.csv", csv_ascii);
+	}
+	break;
+
+  case 14:
+	{
+
+	  mat X;
+	  int n;
+	  
+	  if (0) {
+
+		cout << "----> Importing\n";
+		
+		X.load("/Users/jimmiegoode/Documents/PhD/Matlab/ASSG/rand_ASSG.csv", csv_ascii);
+		n = X.n_cols;
+		
+	  } else {
+
+		cout << "----> Simulating\n";
+	  
+		n = 2;
+
+		double nAlpha = 1.5;
+
+		mat mnSigma(n,n);  
+		mnSigma << 5 << 11 << endr
+				<< 11 << 25 << endr;
+
+		vec vnMu(n);
+		vnMu.zeros();
+
+		X = mystable::assg_rnd(nAlpha, mnSigma, vnMu, 10000);
+	  }
+
+
+	  mat sampleMean = mean(X);
+	  sampleMean.print("sampleMean = ");
+	  
+	  vec alpha(n);
+	  vec sigma(n);
+	  vec mu(n);
+
+	  for (int i = 0; i < n; i++) {
+	  	mystable::ts_struct s = mystable::mle_nlopt(X.col(i), mystable::symAS);
+	  	mystable::ts_struct_print(s);
+
+	  	alpha(i) = s.pars[0];
+	  	sigma(i) = s.pars[1];
+	  	mu(i)    = s.pars[2];
+	  }
+	  
+	  double nalpha = mean(alpha);
+	  mat SigmaHat(n,n);
+	  mystable::assg_dispersionEst(X, nalpha, sigma, mu, SigmaHat);
+
+	  cout << "alpha = " << nalpha << endl;
+	  mu.print("mu = ");
+	  SigmaHat.print("Sigma = ");
+	}
+	break;
+
+  case 15:
+	{
+	  double alpha = 1.5;
+	  
+	  //double param[] = {alpha/2., 1., pow(cos(M_PI*alpha/4.), 2./alpha), 0.};
+	  //double param[] = {1.5, 1., 0.75, 0.};
+	  double param[] = {alpha/2., 1., pow(cos(M_PI*alpha/4.), 2./alpha), 0.};
+ 
+	  mat W = mystable::stablernd(4, param, mystable::AS, 5000, 1);
+	  
+	  //W.save("/Users/jimmiegoode/Documents/Glimm/Toolbox/alphastable/testing/e_W.csv", csv_ascii);
+
+	  mystable::ts_struct s = mystable::mle_nlopt(W.col(0), mystable::AS);
+	  mystable::ts_struct_print(s);
 	  
 	}
 	break;
+	
   } // end of swtich
 }
 
 //-------------------------------------------------------------------------------
 
-/*
-int main(int argc, char** argv) {
-  
-  if (argc < 2)
-	assert(0 && "Invalid Arguments");
-  
-  int testCase = atoi(argv[1]);
 
-  tester(testCase);
+// int main(int argc, char** argv) {
   
-  return 0;
-}
-*/
+//   if (argc < 2)
+// 	assert(0 && "Invalid Arguments");
+  
+//   int testCase = atoi(argv[1]);
+
+//   tester(testCase);
+  
+//   return 0;
+// }

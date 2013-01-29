@@ -10,6 +10,8 @@ OBJS = Constants.o gamma.o IO.o Stats.o skeweduvstudenttpdf.o myskewt.o mygarch.
 #OBJS     = Backtest.o MasterSlave.o mygarch_par.o IO.o
 #OBJS     = Copula.o Stats.o
 
+#OBJS = Stats.o myskewt.o IO.o skeweduvstudenttpdf.o gamma.o mygarch.o
+
 BINDIR   = ../bin
 EXE      = $(BINDIR)/HFRisk
 DEBUG    =

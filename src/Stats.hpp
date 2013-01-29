@@ -18,6 +18,8 @@
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_sort.h>
+
 
 // EXT
 #include <armadillo>
@@ -58,7 +60,8 @@ public:
   static vec normpdf(const vec x, const double mu, const double sigma);
   static double tpdf(const double x, const double nu);
   static double tinv(const double p, const double nu);
-  
+
+  static mat rand(int nRows, int nCols);
   static mat randn(double mu, double sigma, int nRows, int nCols);
   static mat mvnrnd(vec mu, mat sigma, int nObs);
   static mat mvnrnd_2(vec mu, int nObs, mat A);
@@ -79,6 +82,8 @@ public:
   static void cleanupCDF(vec &x, vec &cdf, double tol);
 
   static vec ksdensity(vec xi, vec x);
+
+  static double quantile(vec x, double epsilon);
   
 };
 
