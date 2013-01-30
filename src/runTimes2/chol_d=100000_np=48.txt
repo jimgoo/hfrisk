@@ -17,3 +17,4 @@ Out of 0 required arguments, 0 were not specified.
 Out of 2 optional arguments, 1 were not specified.
 
 ----> Matrix created, starting Cholesky.
+----> Cholesky runtime = 2235.83
