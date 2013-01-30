@@ -1,5 +1,5 @@
 #PBS -N batch_bt
-#PBS -l nodes=8:towel:ppn=12
+#PBS -l nodes=4:towel:ppn=12
 #PBS -o /dev/null
 #PBS -e /dev/null
 
@@ -13,11 +13,11 @@ CG_DATA="/nfs/user01/jimmie21/github/hfrisk/data"
 CG_LUT="/nfs/user01/jimmie21/LUTs"
 CG_EXP="${CG_DATA}/exports"
 
-NP=96
+NP=48
 IT=1
 MC=5109
 
-RF="${CG_EXP}/backtest_np=${NP}_mc=${MC}_innov=${IT}"
+RF="${CG_EXP}/backtest_np=${NP}_mc=${MC}_innov=${IT}_v4"
 
 mkdir ${RF}
 
@@ -26,10 +26,10 @@ mpirun -np "${NP}" ../bin/HFRisk \
 	-rf ${RF} \
 	-nSims 10000 \
 	-mc -1 \
-	-v 0 \
+	-v 1 \
 	-margOnly 0 \
 	-innovType "${IT}" \
-	-beginDate 20070105 \
+	-beginDate 20070108 \
 	-endDate 20120731 \
 	-lut_path "${CG_LUT}/test2" \
 	-doLUT 1 \

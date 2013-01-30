@@ -377,7 +377,7 @@ int main(int argc, char **argv) {
 
 	// write the configuration to file
 	FILE* fTime;
-	fTime = fopen((reportFile + "/conf.csv").c_str(), "w+");	
+	fTime = fopen((reportFile + "/conf.txt").c_str(), "w+");	
 	fprintf(fTime, "%s\n", (ss.str()).c_str());
 	fclose(fTime);
 
@@ -670,10 +670,20 @@ static void do_work_simple(double* work, double* result) {
 
   // set the returns vector, omitting the first size_pars elements
   gsl_vector* retVec = gsl_vector_calloc(rows);
+
+  bool hasNonzeros = false;
   
   for (int i = size_pars; i < size_work; i++)  {
 	gsl_vector_set(retVec, i-size_pars, work[i]);
+	if (work[i] != 0.0)
+	  hasNonzeros = true;
   }
+
+  if (hasNonzeros == false) {
+	gsl_vector_free(retVec);
+	return;
+  }
+  
 
   garch_struct g;
   
@@ -682,11 +692,53 @@ static void do_work_simple(double* work, double* result) {
 	// fit GARCH
 	g = mygarch::fit_nlopt(retVec, R, M, P, Q);
 
+	// convert structure to vector
+	vec x = mygarch::garch_struct_vec(g);
+
+	// set GARCH values to result
+	for (int i = 0; i < x.n_rows; i++)
+	  result[i] = x(i);
+
+	// starting index of innovation distribution's parameters
+	int i0 = x.n_rows; //mygarch::getMessageSize(g);
+
+  
+	//
+	// 1 = skewed t, 2 = stdAS
+	//
+	switch (innovType) {
+	case 1:
+	  {
+		// fit skewed t to the residuals
+		DistPars d = myskewt::fit_nlopt(g.u);
+		result[i0]   = d.gamma;
+		result[i0+1] = d.mu;
+		result[i0+2] = d.df;
+		result[i0+3] = d.sigma;
+	  }
+	  break;
+	case 2:
+	  { 
+		// convert GSL vector to ARMA vector
+		vec gvec(g.u->size);
+		for (int i = 0; i < g.u->size; i++)
+		  gvec(i) = gsl_vector_get(g.u, i);
+	  
+		mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::symAS);
+		result[i0]   = s.pars[0]; //alpha
+		result[i0+1] = s.pars[1]; //sigma
+		result[i0+2] = s.pars[2]; //mu
+	  }
+	  break;
+	default:
+	  assert(0 && "Unknown dependence type");
+	}
+	
   } catch (...) {
 
 	cout << "----> garchfit warning, return vector exported" << endl;
 
-	string errFile = "../data/bad_retVec_" + boost::lexical_cast<string>(vnDates(t-1)) + ".csv";
+	string errFile = "e_bad_retVec.csv"; //_" + boost::lexical_cast<string>(vnDates(t-1)) + ".csv";
 	
 	IO::exportGslVector(retVec, errFile);
 	
@@ -696,47 +748,6 @@ static void do_work_simple(double* work, double* result) {
 	return;
   }
 
-  // convert structure to vector
-  vec x = mygarch::garch_struct_vec(g);
-
-  // set GARCH values to result
-  for (int i = 0; i < x.n_rows; i++)
-	result[i] = x(i);
-
-  // starting index of innovation distribution's parameters
-  int i0 = x.n_rows; //mygarch::getMessageSize(g);
-
-  
-  //
-  // 1 = skewed t, 2 = stdAS
-  //
-  switch (innovType) {
-  case 1:
-	{
-	  // fit skewed t to the residuals
-	  DistPars d = myskewt::fit_nlopt(g.u);
-	  result[i0]   = d.gamma;
-	  result[i0+1] = d.mu;
-	  result[i0+2] = d.df;
-	  result[i0+3] = d.sigma;
-	}
-	break;
-  case 2:
-	{ 
-	  // convert GSL vector to ARMA vector
-	  vec gvec(g.u->size);
-	  for (int i = 0; i < g.u->size; i++)
-		gvec(i) = gsl_vector_get(g.u, i);
-	  
-	  mystable::ts_struct s = mystable::mle_nlopt(gvec, mystable::symAS);
-	  result[i0]   = s.pars[0]; //alpha
-	  result[i0+1] = s.pars[1]; //sigma
-	  result[i0+2] = s.pars[2]; //mu
-	}
-	break;
-  default:
-	assert(0 && "Unknown dependence type");
-  }
   
   // free the GARCH structure
   mygarch::garch_struct_free(g);
