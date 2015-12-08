@@ -1,4 +1,6 @@
-This code does parallel VaR forecasting with Copula-ARMA-GARCH models.
+# hfrisk
+
+This code does parallel VaR and CVaR forecasting with Copula-ARMA-GARCH models, with application to high-frequency risk management (HFRisk).
 
 Parallelization of univariate ARMA-GARCH estimation done via MPI. Testing was on an IBM Blue Gene/P.
 
