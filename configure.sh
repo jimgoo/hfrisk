@@ -2,9 +2,8 @@
 mkdir lib
 cd lib
 
-
-#LIBDIR="/gpfs/home3/j/jgoode/lib"
-LIBDIR="/nfs/user01/jimmie21/github/hfrisk/lib"
+# libraries will be installed here
+LIBDIR="./lib"
 
 #--------------------------------------------------------------
 # Download all libs
