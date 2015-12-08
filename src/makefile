@@ -216,9 +216,6 @@ pack:
 	rm -f src.zip
 	zip -rq src.zip *
 
-send:
-	curl -T src.zip ftp://hjkm.net/private/ --user jimmie1921
-
 sltest:
 	$(CCMPI) -O2 $(LFLAGS) $(BLAS) $(LAPACK) $(SCALAPACK) $(MPI) sltest.cpp -o sltest 
 
