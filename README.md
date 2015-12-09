@@ -8,16 +8,17 @@ The `configure.sh` script will try to install all dependencies in a folder calle
 
 The code has been tested with the following:
 
-- Aarmadillo 3.6.1: for easy linear algebra (SMP only)
+- FFTW 3.3.2: for computing density functions of CTS and NTS tempered stable and alpha stable distributions. 
+- Armadillo 3.6.1: for easy linear algebra
 - nlopt 2.3: for nonlinear optimization of ARMA-GARCH log-likelihood functions.
 - Boost 1.52.0: because it's awesome.
 - GSL 1.5: for stats and optimization algorithms.
-- FFTW 3.3.2: for computing density functions of CTS and NTS tempered stable and alpha stable distributions. 
+
 - cmake 2.8.9
 - gcc 4.7.2
 - HDF5 1.8.9
 
-Once these are installed, you can build with:
+Additionally, you'll need to link to your existing BLAS, LAPACK, and MPI libraries. You can build with:
 
 ```bash
 cd src
