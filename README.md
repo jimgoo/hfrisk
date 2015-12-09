@@ -6,7 +6,7 @@ Parallelization of univariate ARMA-GARCH estimation done via MPI. Testing was on
 
 The `configure.sh` script will try to install all dependencies in a folder called `lib`. 
 
-The code has been tested with the following on Ubuntu 12.04 LTS:
+The code has been tested with the following:
 
 - Aarmadillo 3.6.1: for easy linear algebra (SMP only)
 - nlopt 2.3: for nonlinear optimization of ARMA-GARCH log-likelihood functions.
