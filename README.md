@@ -12,7 +12,7 @@ The code has been tested with the following:
 - Armadillo 3.6.1: for easy linear algebra
 - nlopt 2.3: for nonlinear optimization of ARMA-GARCH log-likelihood functions.
 - GSL 1.5: for stats and optimization algorithms.
-- - Boost 1.52.0
+- Boost 1.52.0
 - cmake 2.8.9
 - gcc 4.7.2
 - HDF5 1.8.9
