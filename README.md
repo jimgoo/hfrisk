@@ -11,9 +11,8 @@ The code has been tested with the following:
 - FFTW 3.3.2: for computing density functions of CTS and NTS tempered stable and alpha stable distributions. 
 - Armadillo 3.6.1: for easy linear algebra
 - nlopt 2.3: for nonlinear optimization of ARMA-GARCH log-likelihood functions.
-- Boost 1.52.0: because it's awesome.
 - GSL 1.5: for stats and optimization algorithms.
-
+- - Boost 1.52.0
 - cmake 2.8.9
 - gcc 4.7.2
 - HDF5 1.8.9
